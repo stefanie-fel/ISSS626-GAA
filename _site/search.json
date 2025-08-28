@@ -4,7 +4,7 @@
     "href": "index.html",
     "title": "ISSS626-GAA",
     "section": "",
-    "text": "ISSS608-GAA\nWelcome to my portfolio for Geospatial Analytics and Applications module in Singapore Management University!\nIn this website, you will find my hands-on exercise, in-class exercise as well as coursework for this course\n."
+    "text": "Welcome to my portfolio for Geospatial Analytics and Applications module in Singapore Management University!\nIn this website, you will find my hands-on exercise, in-class exercise as well as coursework for this course."
   },
   {
     "objectID": "about.html",
@@ -12,5 +12,47 @@
     "title": "About",
     "section": "",
     "text": "About this site\n\n1 + 1\n\n[1] 2"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html",
+    "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html",
+    "title": "Hands-on Exercise 1a",
+    "section": "",
+    "text": "Objective of this exercise:\n\nCreate thematic map, which involve the use of map symbols to visualize geographic features that are not naturally visible (e.g. population,temperature, crime rate, property prices, etc).\nCreate geovisualization, which uses visual representations and cartographic techniques to explore, analyze and communicate geospatial data"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#getting-started",
+    "title": "Hands-on Exercise 1a",
+    "section": "",
+    "text": "Objective of this exercise:\n\nCreate thematic map, which involve the use of map symbols to visualize geographic features that are not naturally visible (e.g. population,temperature, crime rate, property prices, etc).\nCreate geovisualization, which uses visual representations and cartographic techniques to explore, analyze and communicate geospatial data"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-libraries",
+    "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-libraries",
+    "title": "Hands-on Exercise 1a",
+    "section": "Import Libraries",
+    "text": "Import Libraries\nThe libraries used in this exercise would be:\n\ntmap\n\n\n\nreadr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\ntidyr: tool to create tidy data\ndplyr: grammar of data manipulation (to work with data frame like objects)\nsf: simple features in R to encode and analyze spatial vector data\nrvest: help scrape data from web page"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#the-data",
+    "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#the-data",
+    "title": "Hands-on Exercise 1a",
+    "section": "The Data",
+    "text": "The Data"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-data",
+    "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-data",
+    "title": "Hands-on Exercise 1a",
+    "section": "Import Data",
+    "text": "Import Data\nData Prep"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html",
+    "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html",
+    "title": "Hands-on Exercise 1b",
+    "section": "",
+    "text": "Getting Started\nObjective of this exercise:\nImport Libraries The libraries used in this exercise would be:\nThe Data\nImport Data\nData Prep"
   }
 ]

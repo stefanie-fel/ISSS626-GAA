@@ -18,14 +18,7 @@ format:
   html:
     theme:
       - solar
-    css:
-      - |
-          .navbar {
-            background-color: #004080 !important;
-          }
-          .navbar .navbar-nav .nav-link {
-            color: #ffffff !important;
-          }
+    css: styles.css
     toc: true
 
 editor: visual

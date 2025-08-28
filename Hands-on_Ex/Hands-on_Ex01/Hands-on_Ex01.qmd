@@ -1,0 +1,43 @@
+---
+title: "Hands-on Exercise 1a"
+author: "Stefanie Felicia"
+date: "August 28, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+## Getting Started
+
+Objective of this exercise:
+
+-   Create thematic map, which involve the use of map symbols to visualize geographic features that are not naturally visible (e.g. population,temperature, crime rate, property prices, etc).
+
+-   Create geovisualization, which uses visual representations and cartographic techniques to explore, analyze and communicate geospatial data
+
+## Import Libraries 
+
+The libraries used in this exercise would be:
+
+-   tmap
+
+<!-- -->
+
+-   readr: fast way to read rectangular data from delimited files (e.g. csv and tsv)
+
+-   tidyr: tool to create tidy data
+
+-   dplyr: grammar of data manipulation (to work with data frame like objects)
+
+-   sf: simple features in R to encode and analyze spatial vector data
+
+-   rvest: help scrape data from web page
+
+## The Data
+
+## Import Data
+
+Data Prep
