@@ -1,0 +1,32 @@
+project:
+  type: website
+
+website:
+  title: "ISSS626-GAA"
+  navbar:
+    left:
+      - text: "Hands-on Exercise"
+        menu:
+        - text: "Hands-on Exercise 1"
+          href: "Hands-on_ExHands-on_Ex01/Hands-on_Ex01.html"
+    right:
+      - href: index.qmd
+        text: Home
+      - about.qmd
+
+format:
+  html:
+    theme:
+      - solar
+    css:
+      - |
+          .navbar {
+            background-color: #004080 !important;
+          }
+          .navbar .navbar-nav .nav-link {
+            color: #ffffff !important;
+          }
+    toc: true
+
+editor: visual
+

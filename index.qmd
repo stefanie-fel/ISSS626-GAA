@@ -1,0 +1,11 @@
+---
+title: "ISSS626-GAA"
+---
+
+# ISSS608-GAA
+
+Welcome to my portfolio for **Geospatial Analytics and Applications** module in Singapore Management University!
+
+In this website, you will find my hands-on exercise, in-class exercise as well as coursework for this course
+
+.
