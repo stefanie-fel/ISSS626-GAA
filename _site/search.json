@@ -32,21 +32,21 @@
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-libraries",
     "title": "Hands-on Exercise 1a",
     "section": "Import Libraries",
-    "text": "Import Libraries\nThe libraries used in this exercise would be:\n\ntmap\n\n\n\nreadr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\ntidyr: tool to create tidy data\ndplyr: grammar of data manipulation (to work with data frame like objects)\nsf: simple features in R to encode and analyze spatial vector data\nrvest: help scrape data from web page"
+    "text": "Import Libraries\n\npacman::p_load(sf, tmap, tidyverse, rvest)\n\nThe libraries used in this exercise would be:\n\ntmap\nreadr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\ntidyr: tool to create tidy data\ndplyr: grammar of data manipulation (to work with data frame like objects)\nsf: simple features in R to encode and analyze spatial vector data\nrvest: help scrape data from web page"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#the-data",
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#the-data",
     "title": "Hands-on Exercise 1a",
     "section": "The Data",
-    "text": "The Data"
+    "text": "The Data\nIn this hands-on exercise, we’ll be using the Master PLan 2019 Master Boundary (No Sea) KML file (geospatial data), which consist of the geographical boundary of Singapore at planning subzone area in 2019.\nWe’ll also be using the Singapore Residents by Planning Area/Subzone, Age Group, Sex and Type of Dwelling, June 2024 in csv file (aspatial data). The PA and SZ column can be used to identify to georeference to the Master Plan 2019 Subzone Boundary data."
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-data",
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#import-data",
     "title": "Hands-on Exercise 1a",
     "section": "Import Data",
-    "text": "Import Data\nData Prep"
+    "text": "Import Data\n\nData Prep"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html",

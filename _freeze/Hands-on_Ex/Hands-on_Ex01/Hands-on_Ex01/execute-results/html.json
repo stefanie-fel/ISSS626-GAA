@@ -1,0 +1,15 @@
+{
+  "hash": "f61d1e802e6f380961ede3e159d5e485",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Hands-on Exercise 1a\"\nauthor: \"Stefanie Felicia\"\ndate: \"August 28, 2025\"\ndate-modified: \"last-modified\"\nexecute: \n  eval: true\n  echo: true\n  warning: false\n  freeze: true\n---\n\n## Getting Started\n\nObjective of this exercise:\n\n-   Create thematic map, which involve the use of map symbols to visualize geographic features that are not naturally visible (e.g. population,temperature, crime rate, property prices, etc).\n\n-   Create geovisualization, which uses visual representations and cartographic techniques to explore, analyze and communicate geospatial data\n\n## Import Libraries\n\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf, tmap, tidyverse, rvest)\n```\n:::\n\n\nThe libraries used in this exercise would be:\n\n-   tmap\n-   readr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\n-   tidyr: tool to create tidy data\n-   dplyr: grammar of data manipulation (to work with data frame like objects)\n-   sf: simple features in R to encode and analyze spatial vector data\n-   rvest: help scrape data from web page\n\n## The Data\n\nIn this hands-on exercise, we'll be using the *Master PLan 2019 Master Boundary* (No Sea) KML file (geospatial data), which consist of the geographical boundary of Singapore at planning subzone area in 2019.\n\nWe'll also be using the *Singapore Residents by Planning Area/Subzone, Age Group, Sex and Type of Dwelling, June 2024* in csv file (aspatial data). The PA and SZ column can be used to identify to georeference to the *Master Plan 2019 Subzone Boundary* data.\n\n## Import Data\n\n```{}\n```\n\nData Prep\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
