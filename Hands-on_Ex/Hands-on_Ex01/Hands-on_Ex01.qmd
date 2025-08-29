@@ -41,7 +41,8 @@ We'll also be using the *Singapore Residents by Planning Area/Subzone, Age Group
 
 ## Import Data
 
-```{}
+```{r}
+mpsz <- st_read("data/MasterPlan2019SubzoneBoundaryNoSeaKML.kml")
 ```
 
-Data Prep
+## Data Preparation
