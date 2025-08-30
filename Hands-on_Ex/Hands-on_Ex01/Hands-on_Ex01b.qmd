@@ -10,14 +10,18 @@ execute:
   freeze: true
 ---
 
-Getting Started
+## Getting Started
 
 Objective of this exercise:
 
-Import Libraries The libraries used in this exercise would be:
+-   
 
-The Data
+## Import Libraries 
 
-Import Data
+The libraries used in this exercise would be:
+
+## The Data
+
+## Import Data
 
 Data Prep

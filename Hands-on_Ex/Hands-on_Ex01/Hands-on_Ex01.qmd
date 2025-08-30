@@ -65,8 +65,7 @@ extract_kml_field <- function(html_text, field_name) {
 }
 ```
 
-What does this code do:
-
+::: {.callout-note title="What does the code do"}
 -   The function checks if html_text is an empty string and returns NA_character\_
 
 -   It parses the raw HTML string to HTML document and extract all table row element
@@ -74,6 +73,7 @@ What does this code do:
 -   For each row, it extracts the table row's text and keeps only rows which table header matches field_name
 
 -   Then it returns the text from the table data cell
+:::
 
 ```{r}
 mpsz <- mpsz %>%
@@ -87,11 +87,11 @@ mpsz <- mpsz %>%
   relocate(geometry, .after = last_col())
 ```
 
-What does this code do:
-
+::: {.callout-note title="What does the code do"}
 -   Extracts fields from description column and use `extract_kml_field`to extract data from REGION_N, PLN_AREA_N, SUBZONE_N and SUBZONE_C
 
 -   Moves the geometry column to the very end using `relocate`
+:::
 
 ```{r}
 mpsz
