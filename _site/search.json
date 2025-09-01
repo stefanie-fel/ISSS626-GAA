@@ -53,7 +53,7 @@
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html",
     "title": "Hands-on Exercise 1b",
     "section": "",
-    "text": "Objective of this exercise:"
+    "text": "Objective of this exercise is to import, wrangle, integrate and process geospatial data sets using:\n\nsf library to import geospatial data\nreadr library to import aspatial data\nUse Base R adnd sf libraries yto explore contents fof simple feature data frame\nUse sf library to transform or assign coordinate systems\nConvert aspatial data into sf data frame and perform geoprocessing tasks using sf library\nUse dpylr library to do data wrangling\nPerform EDA using ggplot2"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html#data-preparation",
@@ -81,14 +81,14 @@
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html#getting-started",
     "title": "Hands-on Exercise 1b",
     "section": "",
-    "text": "Objective of this exercise:"
+    "text": "Objective of this exercise is to import, wrangle, integrate and process geospatial data sets using:\n\nsf library to import geospatial data\nreadr library to import aspatial data\nUse Base R adnd sf libraries yto explore contents fof simple feature data frame\nUse sf library to transform or assign coordinate systems\nConvert aspatial data into sf data frame and perform geoprocessing tasks using sf library\nUse dpylr library to do data wrangling\nPerform EDA using ggplot2"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html#import-libraries",
     "href": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html#import-libraries",
     "title": "Hands-on Exercise 1b",
     "section": "Import Libraries",
-    "text": "Import Libraries\nThe libraries used in this exercise would be:"
+    "text": "Import Libraries\n\npacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)\n\nThe libraries used in this exercise would be:\n\nsf: simple features in R to encode and analyze spatial vector data\nreadr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\ndplyr: grammar of data manipulation (to work with data frame like objects)\ntidyverse: collection of R packages that for data manipulation and visualization\ntidyr: tool to create tidy data\nggplot2: create graphics based on “the Grammar of Objects”"
   },
   {
     "objectID": "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html#the-data",

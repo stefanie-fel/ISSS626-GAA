@@ -1,0 +1,15 @@
+{
+  "hash": "f8e9182a65da63ce7c643bbc227e1f7e",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"Hands-on Exercise 1b\"\nauthor: \"Stefanie Felicia\"\ndate: \"August 29, 2025\"\ndate-modified: \"last-modified\"\nexecute: \n  eval: true\n  echo: true\n  warning: false\n  freeze: true\n---\n\n## Getting Started\n\nObjective of this exercise is to import, wrangle, integrate and process geospatial data sets using:\n\n-   sf library to import geospatial data\n\n-   readr library to import aspatial data\n\n-   Use Base R adnd sf libraries yto explore contents fof simple feature data frame\n\n-   Use sf library to transform or assign coordinate systems\n\n-   Convert aspatial data into sf data frame and perform geoprocessing tasks using sf library\n\n-   Use dpylr library to do data wrangling\n\n-   Perform EDA using ggplot2\n\n## Import Libraries\n\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)\n```\n:::\n\n\nThe libraries used in this exercise would be:\n\n-   sf: simple features in R to encode and analyze spatial vector data\n\n-   readr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\n\n-   dplyr: grammar of data manipulation (to work with data frame like objects)\n\n-   tidyverse: collection of R packages that for data manipulation and visualization\n\n-   tidyr: tool to create tidy data\n\n-   ggplot2: create graphics based on \"the Grammar of Objects\"\n\n## The Data\n\n## Import Data\n\nData Prep\n",
+    "supporting": [],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}

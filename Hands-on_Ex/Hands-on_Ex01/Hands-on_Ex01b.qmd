@@ -12,13 +12,41 @@ execute:
 
 ## Getting Started
 
-Objective of this exercise:
+Objective of this exercise is to import, wrangle, integrate and process geospatial data sets using:
 
--   
+-   sf library to import geospatial data
 
-## Import Libraries 
+-   readr library to import aspatial data
+
+-   Use Base R adnd sf libraries yto explore contents fof simple feature data frame
+
+-   Use sf library to transform or assign coordinate systems
+
+-   Convert aspatial data into sf data frame and perform geoprocessing tasks using sf library
+
+-   Use dpylr library to do data wrangling
+
+-   Perform EDA using ggplot2
+
+## Import Libraries
+
+```{r}
+pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)
+```
 
 The libraries used in this exercise would be:
+
+-   sf: simple features in R to encode and analyze spatial vector data
+
+-   readr: fast way to read rectangular data from delimited files (e.g. csv and tsv)
+
+-   dplyr: grammar of data manipulation (to work with data frame like objects)
+
+-   tidyverse: collection of R packages that for data manipulation and visualization
+
+-   tidyr: tool to create tidy data
+
+-   ggplot2: create graphics based on "the Grammar of Objects"
 
 ## The Data
 
