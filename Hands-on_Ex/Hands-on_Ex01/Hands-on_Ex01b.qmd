@@ -50,6 +50,116 @@ The libraries used in this exercise would be:
 
 ## The Data
 
-## Import Data
+In this hands-on exercise, we'll be using the following datasets:
 
-Data Prep
+-   <a href="https://data.gov.sg/datasets/d_d14da225fccf921049ab64238ff473d9/view">Master Plan 2014 Subzone Boundary (Web)</a>
+
+-   <a href="https://data.gov.sg/datasets/d_a72bcd23e208d995f3bd4eececeaca43/view">Pre-schools Location</a>
+
+-   <a href="https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=cycling%20path">Cycling Path</a>
+
+-   <a href="https://insideairbnb.com/get-the-data/">Listing data of Airbnb</a>
+
+## Import Geospatial Data
+
+In this section, we'll learn to import geosptial data using st_read().
+
+### Import Polygon Data in Shapefile Format
+
+st_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data `dsn` argument i sused to define data path and `layer` is used to provide shapefile name without extension.
+
+```{r}
+mpsz = st_read(dsn = "data/MasterPlan2014SubzoneBoundaryWebSHP", 
+                  layer = "MP14_SUBZONE_WEB_PL")
+```
+
+From the message above, it reveals that the geospatial objects are multipolygon features and there are 323 multipolygon features and 15 fieds in the data frame. The data frame is in svy21 projected coordinated systems.
+
+### Import Polyline Data in Shapefile Form
+
+Similar to importing polygon feature data, we'll be using st_read from sf library to import the dataset to line feature data frame
+
+```{r}
+cyclingpath = st_read(dsn = "data/CyclingPath_Apr2025", 
+                         layer = "CyclingPathGazette")
+```
+
+The dataset reveals that there's 4651 features and 19 fields and they are captured in multilinestring object.
+
+### Import GIS Data in KML Format
+
+```{r}
+preschool = st_read("data/PreSchoolsLocation.kml")
+```
+
+From the import message above, we can see that the dataset is a point feature data frame and there's 2290 features and 2 fields. The dataset is also set in wgs84 coordinate system.
+
+## Check the Content of Simple Feature Data Frame
+
+There are a few approaches to check the content fo a dataframe, such as:
+
+1.  Using st_geomtery
+
+    Through using st_geometry, we can see the basic information of the feature class (e.g. type of geometry, geographic extent of the features and the coordinate system of the data
+
+    ```{r}
+    st_geometry(mpsz)
+    ```
+
+2.  Use glimpse()
+
+    glimpse() provide basic geospatial feature information as well as associated attribute information in the dataframe like the data type of each fields.
+
+    ```{r}
+    st_geometry(mpsz)
+    ```
+
+3.  Use head()
+
+    Head() is used to reveal complete information of the feature object and it gives user flexibility whether to show the whole record of the dataframe, or only a few select (through the argument `n`).
+
+    ```{r}
+    head(mpsz, n=5)  
+    ```
+
+## Plotting Geospatial Data 
+
+In geospatial data science, it's important to be able to visualize the geospatial feature as we're working with maps and location which is difficult to understand without looking at it visually. We can plot in R like below.
+
+```{r}
+plot(mpsz)
+```
+
+But if we just want to show the map as it is, we can use st_geometry().
+
+```{r}
+plot(st_geometry(mpsz))
+```
+
+We can also choose the plot we want to display by specifying the attribute like below.
+
+```{r}
+plot(mpsz["PLN_AREA_N"])
+```
+
+### Working with Projection
+
+To perform geoprocessing using geospatial datasets, we need to ensure that geospatial datasets are projected using similar coordinate system or known as projection transformation.
+
+#### Assign ESPG code to simple feature data frame
+
+When importing geospatial data is that coordinate system of source data was missing or wrongly assigned during importing process. We can check coordinate system of a dataframe using st_crs()
+
+```{r}
+st_crs(mpsz)
+```
+
+As can be seen at the end of the message, the EPSG code is 9001, which is not the EPSG code for svy21. So we can reset by using the st_set_crs()
+
+```{r}
+mpsz <- st_set_crs(mpsz,3414)
+```
+
+```{r}
+st_crs(mpsz)
+```
