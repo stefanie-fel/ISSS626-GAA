@@ -122,7 +122,7 @@ There are a few approaches to check the content fo a dataframe, such as:
     head(mpsz, n=5)  
     ```
 
-## Plotting Geospatial Data 
+## Plotting Geospatial Data
 
 In geospatial data science, it's important to be able to visualize the geospatial feature as we're working with maps and location which is difficult to understand without looking at it visually. We can plot in R like below.
 
