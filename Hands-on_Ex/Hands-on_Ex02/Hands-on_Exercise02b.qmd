@@ -1,0 +1,68 @@
+---
+title: "Hands-on Exercise 2b"
+author: "Stefanie Felicia"
+date: "September 4, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+Getting Started
+
+Objective of this exercise is to import, wrangle, integrate and process geospatial data sets using:
+
+sf library to import geospatial data
+
+readr library to import aspatial data
+
+Use Base R adnd sf libraries yto explore contents fof simple feature data frame
+
+Use sf library to transform or assign coordinate systems
+
+Convert aspatial data into sf data frame and perform geoprocessing tasks using sf library
+
+Use dpylr library to do data wrangling
+
+Perform EDA using ggplot2
+
+Import Libraries
+
+{r}
+pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)
+
+The libraries used in this exercise would be:
+
+sf: simple features in R to encode and analyze spatial vector data
+
+readr: fast way to read rectangular data from delimited files (e.g. csv and tsv)
+
+dplyr: grammar of data manipulation (to work with data frame like objects)
+
+tidyverse: collection of R packages that for data manipulation and visualization
+
+tidyr: tool to create tidy data
+
+ggplot2: create graphics based on "the Grammar of Objects"
+
+The Data
+
+In this hands-on exercise, we'll be using the following datasets:
+
+<a href="https://data.gov.sg/datasets/d_d14da225fccf921049ab64238ff473d9/view">Master Plan 2014 Subzone Boundary (Web)</a>
+
+<a href="https://data.gov.sg/datasets/d_a72bcd23e208d995f3bd4eececeaca43/view">Pre-schools Location</a>
+
+<a href="https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=cycling%20path">Cycling Path</a>
+
+<a href="https://insideairbnb.com/get-the-data/">Listing data of Airbnb</a>
+
+Import Geospatial Data
+
+In this section, we'll learn to import geosptial data using st_read().
+
+Import Polygon Data in Shapefile Format
+
+st_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data dsn argument i sused to define data path and layer is used to provide shapefile name without extension.

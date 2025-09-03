@@ -1,0 +1,63 @@
+---
+title: "Hands-on Exercise 2a"
+author: "Stefanie Felicia"
+date: "September 4, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+## Getting Started
+
+Objective of this exercise is to evaluate pattern or distribution of a set of points on a surface (e.g. events or business services or facilities). In this hands-on exercise, we'll specifically explore first-order spatial point pattern analysis (1st SPPA).
+
+First-order Spatial Point Pattern Analysis focus on understanding intensity of points across a study area since they vary across different study area. But the analysis don't consider the interactions between individual location of points and distributions. The analysis also answers questions like **where are points are densely located**, **how spread out the point patterns are** and **if the density uniform or vary across space**.
+
+In this exercise, we'll be using spatstat specifically to answer these questions:
+
+-   Are childcare centres in Singapore randomly distributed throughout the country ?
+
+-   If not, which location have higher childcare centres ?
+
+## Import Libraries
+
+```{r}
+pacman::p_load(sf, terra, spatstat, 
+               tmap, rvest, tidyverse)
+```
+
+The libraries used in this exercise would be:
+
+-   sf: simple features in R to encode and analyze spatial vector data
+
+-   tmap: used to draw thematic map
+
+-   rvest: help scrape data from web page
+
+-   spatstat: spatial statistics with focus on analyzing spatial point patterns in SD (with some 3D support)
+
+-   terra: methods for spatial data analysis with vector (points. lines, polygons) and raster (grid) data
+
+## The Data
+
+In this hands-on exercise, we'll be using the following datasets:
+
+-   <a href="https://data.gov.sg/collections/1749/view">Master Plan 2019 Subzone Boundary (No Sea)</a>
+
+-   <a href="https://data.gov.sg/datasets/d_5d668e3f544335f8028f546827b773b4/view">Child Care Sevices</a>
+
+## Import and Wrangle Geospatial Data
+
+First, we'll import the Master Plan 2019 Subzone Boundary (No Sea) in kml file.
+
+```{r}
+mpsz_sf <- st_read("data/Master Plan 2019 Subzone Boundary (No Sea) (KML).kml") %>% 
+  st_zm(drop = TRUE, what = "ZM") %>% st_transform(crs = 3414)
+```
+
+### Import Polygon Data in Shapefile Format
+
+st_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data `dsn` argument i sused to define data path and `layer` is used to provide shapefile name without extension.
