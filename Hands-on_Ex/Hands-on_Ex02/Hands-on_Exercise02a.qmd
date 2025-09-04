@@ -41,6 +41,8 @@ The libraries used in this exercise would be:
 
 -   terra: methods for spatial data analysis with vector (points. lines, polygons) and raster (grid) data
 
+-   tidyverse: collection of R packages that for data manipulation and visualization
+
 ## The Data
 
 In this hands-on exercise, we'll be using the following datasets:
@@ -58,6 +60,243 @@ mpsz_sf <- st_read("data/Master Plan 2019 Subzone Boundary (No Sea) (KML).kml") 
   st_zm(drop = TRUE, what = "ZM") %>% st_transform(crs = 3414)
 ```
 
-### Import Polygon Data in Shapefile Format
+The st_zm() is used to remove Z (elevation) and M (measure) dimensions from geospatial geometries.
 
-st_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data `dsn` argument i sused to define data path and `layer` is used to provide shapefile name without extension.
+Next, we'll build a function to extract attributes like REGION_N, PLN_AREA_N, SUBZONE_N and SUBZONE_C from HTML Description column in the KML file and filter out unwanted SUBZONE_N and PLN_AREA_N.
+
+```{r}
+extract_kml_field <- function(html_text, field_name) {
+  if (is.na(html_text) || html_text == "") return(NA_character_)
+  
+  page <- read_html(html_text)
+  rows <- page %>% html_elements("tr")
+  
+  value <- rows %>%
+    keep(~ html_text2(html_element(.x, "th")) == field_name) %>%
+    html_element("td") %>%
+    html_text2()
+  
+  if (length(value) == 0) NA_character_ else value
+}
+```
+
+```{r}
+mpsz_sf <- mpsz_sf %>%
+  mutate(
+    REGION_N = map_chr(Description, extract_kml_field, "REGION_N"),
+    PLN_AREA_N = map_chr(Description, extract_kml_field, "PLN_AREA_N"),
+    SUBZONE_N = map_chr(Description, extract_kml_field, "SUBZONE_N"),
+    SUBZONE_C = map_chr(Description, extract_kml_field, "SUBZONE_C")
+  ) %>%
+  select(-Name, -Description) %>%
+  relocate(geometry, .after = last_col())
+```
+
+```{r}
+mpsz_cl <- mpsz_sf %>%
+  filter(SUBZONE_N != "SOUTHERN GROUP",
+         PLN_AREA_N != "WESTERN ISLANDS",
+         PLN_AREA_N != "NORTH-EASTERN ISLANDS")
+```
+
+```{r}
+write_rds(mpsz_cl, 
+          "data/mpsz_cl.rds")
+```
+
+Next, we'll import the Childcare Service data.
+
+```{r}
+childcare_sf <- st_read("data/ChildCareServices.kml") %>% 
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 3414)
+```
+
+### Mapping Geospatial Datasets
+
+```{r}
+tm_shape(mpsz_cl) +
+  tm_polygons(col = "lightgrey", border.col = "white") +
+tm_shape(childcare_sf) +
+  tm_dots(col = "red", size = 0.1)
+
+```
+
+We can also make it into interactive plot by using tmap_mode()
+
+```{r}
+tmap_mode('view')
+tm_shape(childcare_sf)+
+  tm_dots()
+```
+
+```{r}
+tmap_mode('plot')
+```
+
+### Geospatial Data Wrangling
+
+spatstat relies on its own specific data structures like **ppp** (planar point pattern) for **point data and** **owin** **to observe data on specific region (or called windows)**. In this section, we'll convert sf objects into spatstat ppp and owin object.
+
+#### Convert Data Frames to ppp Class
+
+spatstat requires the point event data in ppp object form. We'll use the `as.ppp()` to convert the dtaset to ppp format
+
+```{r}
+childcare_ppp <- as.ppp(childcare_sf)
+```
+
+To verify the object class, we'll use the `class()` function.
+
+```{r}
+class(childcare_ppp)
+```
+
+We'll also take a look at the summary statistics
+
+```{r}
+summary(childcare_ppp)
+```
+
+#### Create owin Object
+
+Owin object is designed to represent polygonal region. We can do that by using `as.owin()` function to convert sf object to owin.
+
+```{r}
+sg_owin <- as.owin(mpsz_cl)
+```
+
+We use `class()` to check the object class
+
+```{r}
+class(sg_owin)
+```
+
+We can now display the owin object using `plot()`
+
+```{r}
+plot(sg_owin)
+```
+
+#### Combine owin and ppp Objects
+
+We can finally combine both objects by using the code below
+
+```{r}
+childcareSG_ppp = childcare_ppp[sg_owin]
+```
+
+```{r}
+childcareSG_ppp
+```
+
+### Clark-Evan Test for Nearest Neighbor Analysis
+
+Clark-evans test is a statistical method that utilizes the mean nearest neighbor distance (taking the mean of distances between each point to its nearest neighbor) **to check if a point pattern is clustered, random or uniformly spaced**. The test uses aggregation index (R) to describe the pattern:
+
+-   R \< 1 signifies a clustered point pattern
+
+-   R = 1 signify random point pattern
+
+In this section, we'll be using Clark-evans test using clarkevans.test(), in which the test hypotheses are:
+
+-   H0: The distribution are randomly distributed
+
+-   H1: The distribution are not randomly distributed
+
+and the 95% Confidence Interval will be used. For more information on the full arguments available, <a href="https://search.r-project.org/CRAN/refmans/spatstat.explore/html/clarkevans.test.html">click here</a>.
+
+#### Perform Clark-Evans test without CSR
+
+We can perform Clark-Evans test without CSR as the clarkevans.test() supports testing without CRS
+
+```{r}
+clarkevans.test(childcareSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"))
+```
+
+#### Perform Clark-Evans test with CSR
+
+In this section, we'll be using the MonteCarlo method, in which the test is computed by comparing the observed value of R to results obtained from nsim (i.e. 39, 99, 999) simulated realizations of Complete Spatial Randomness conditional on observed number of points.
+
+```{r}
+clarkevans.test(childcareSG_ppp,
+                correction="none",
+                clipregion="sg_owin",
+                alternative=c("clustered"),
+                method="MonteCarlo",
+                nsim=99)
+```
+
+### Kernel Density Estimation Method
+
+Kernel Density Estimation is valuable tool for visualizing and analyzing first-order spatial point patterns and is usually used for EDA because it can be used to visualize and understand spatial data patterns by transforming point faya into continuous density surfaces that reveal clusters and variations in event occurrences without making prior assumptions about data distributions.
+
+#### Working with Automatic Bandwidth Selection Method
+
+To use kernel density, we'll be using the `density()` function.
+
+```{r}
+kde_SG_diggle <- density(
+  childcareSG_ppp,
+  sigma=bw.diggle,
+  edge=TRUE,
+  kernel="gaussian") 
+```
+
+::: {.callout-tip title="What does the code do"}
+-   bw.diggle() automatic bandwidth selection method. Ther are other methods e.g. bw.CvL(), bw.scott() and bw.ppl()
+
+-   `kernel` argument is the smoothing kernel. It is used for ..., the defualt value is "gaussian, but there are other smoothing methods available e.g. "epancechnikov", "quartic" and "disc"
+
+-   `edge` argument applies edge correction (meaning kernel that overlap the boundary are renormalized so they don't lose mass). the default value for this argument is FALSE
+
+-   The function outputs an im class, which represents a 2D pixel image. It's a class used to store and manipulate raster data, where the spatial domain is divide to a grid of rectangular pixels
+:::
+
+The plot() function can be used to display the kernel density derived.
+
+```{r}
+plot(kde_SG_diggle)
+```
+
+We can use summary() function to print the summary report
+
+```{r}
+summary(kde_SG_diggle)
+```
+
+Before moving to the next step, it's good to know that we can retrieve the bandwidth used to compute the kde layer
+
+```{r}
+bw <- bw.diggle(childcareSG_ppp)
+bw
+```
+
+#### Rescaling KDE Values
+
+As we saw in the summary, the output range was from 0 to 0.0003727443 which is a very small number. This is because the default unit of measurement of svy21 is in meters. So, we can rescale.ppp() to convert the unit of measurement to km.
+
+```{r}
+childcareSG_ppp_km <- rescale.ppp(
+  childcareSG_ppp, 1000, "km")
+```
+
+We can re-apply the function
+
+```{r}
+kde_childcareSG_km <- density(childcareSG_ppp_km,
+                              sigma=bw.diggle,
+                              edge=TRUE,
+                              kernel="gaussian")
+```
+
+And plot the kde object again
+
+```{r}
+plot(kde_childcareSG_km)
+```
+
+### Working with Different Automatic Bandwidth Methods

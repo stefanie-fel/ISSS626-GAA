@@ -30,8 +30,7 @@ Perform EDA using ggplot2
 
 Import Libraries
 
-{r}
-pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)
+{r} pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)
 
 The libraries used in this exercise would be:
 
