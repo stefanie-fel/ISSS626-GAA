@@ -12,42 +12,356 @@ execute:
 
 ## Getting Started
 
-Objective of this exercise is discover aspatial point processes of childcare centers in Singapore by using 2nd order spatial point patterns analysis,w which unlike 1st order that only observe the distributions of points in the surface, the 2nd order examine spatial relationships between points ina pattern (how one point can influence the location of another point). In this exercise, we will be using spatstat library to answer teh following questions:
+Objective of this exercise is discover aspatial point processes of childcare centers in Singapore by using 2nd order spatial point patterns analysis, which unlike 1st order that only observe the distributions of points in the surface, the 2nd order examine spatial relationships between points in a pattern (**how one point can influence the location of another point**). In this exercise, we will be using spatstat library to answer the following questions:
+
+-   Are the childcare centrers in in Singapore randomly distributed throughout the country ?
+
+-   If not, where are the location with higher concentration of childcare centers ?
 
 ## Import Libraries
 
-{r} pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)
+```{r}
+pacman::p_load(sf, spatstat, tmap, tidyverse)
+```
 
 The libraries used in this exercise would be:
 
-sf: simple features in R to encode and analyze spatial vector data
+-   sf: simple features in R to encode and analyze spatial vector data
 
-readr: fast way to read rectangular data from delimited files (e.g. csv and tsv)
+-   spatstat: spatial statistics with focus on analyzing spatial point patterns in SD (with some 3D support)
 
-dplyr: grammar of data manipulation (to work with data frame like objects)
+-   tmap: used to draw thematic map
 
-tidyverse: collection of R packages that for data manipulation and visualization
+-   tidyverse: collection of R packages that for data manipulation and visualization
 
-tidyr: tool to create tidy data
-
-ggplot2: create graphics based on "the Grammar of Objects"
-
-The Data
+## The Data
 
 In this hands-on exercise, we'll be using the following datasets:
 
-<a href="https://data.gov.sg/datasets/d_d14da225fccf921049ab64238ff473d9/view">Master Plan 2014 Subzone Boundary (Web)</a>
+-   <a href="https://data.gov.sg/collections/1749/view">Master Plan 2019 Subzone Boundary (No Sea)</a>
 
-<a href="https://data.gov.sg/datasets/d_a72bcd23e208d995f3bd4eececeaca43/view">Pre-schools Location</a>
+-   <a href="https://data.gov.sg/datasets/d_5d668e3f544335f8028f546827b773b4/view">Child Care Sevices</a>
 
-<a href="https://datamall.lta.gov.sg/content/datamall/en/search_datasets.html?searchText=cycling%20path">Cycling Path</a>
+### Import and Wrangle Geospatial Data
 
-<a href="https://insideairbnb.com/get-the-data/">Listing data of Airbnb</a>
+Since we had saved our cleaned dataset from Master Plan 2019 Subzone Boundary (No Sea) in the Hands-on 2a, we'll just load the file here instead of importing and wrangling the dataset again.
 
-Import Geospatial Data
+```{r}
+mpsz_cl <- readRDS("data/mpsz_cl.rds")
+```
 
-In this section, we'll learn to import geosptial data using st_read().
+Next, we'll extract the childcare centre dataset.
 
-Import Polygon Data in Shapefile Format
+```{r}
+childcare_sf <- st_read("data/ChildCareServices.kml") %>% 
+  st_zm(drop = TRUE, what = "ZM") %>%
+  st_transform(crs = 3414)
+```
 
-st_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data dsn argument i sused to define data path and layer is used to provide shapefile name without extension.
+We will wrangle the dataframe as Hands-on 2a did.
+
+```{r}
+childcare_ppp <- as.ppp(childcare_sf)
+```
+
+```{r}
+class(childcare_ppp)
+```
+
+```{r}
+# extract punggol, tampines, choa chu kang and jurong west
+pg <- mpsz_cl %>%
+  filter(PLN_AREA_N == "PUNGGOL")
+tm <- mpsz_cl %>%
+  filter(PLN_AREA_N == "TAMPINES")
+ck <- mpsz_cl %>%
+  filter(PLN_AREA_N == "CHOA CHU KANG")
+jw <- mpsz_cl %>%
+  filter(PLN_AREA_N == "JURONG WEST")
+```
+
+```{r}
+# create owin objects
+pg_owin = as.owin(pg)
+tm_owin = as.owin(tm)
+ck_owin = as.owin(ck)
+jw_owin = as.owin(jw)
+```
+
+```{r}
+#combine with point object 
+childcare_pg_ppp = childcare_ppp[pg_owin]
+childcare_tm_ppp = childcare_ppp[tm_owin]
+childcare_ck_ppp = childcare_ppp[ck_owin]
+childcare_jw_ppp = childcare_ppp[jw_owin]
+```
+
+```{r}
+#rescale form meters to km
+childcare_pg_ppp.km = rescale.ppp(childcare_pg_ppp, 1000, "km")
+childcare_tm_ppp.km = rescale.ppp(childcare_tm_ppp, 1000, "km")
+childcare_ck_ppp.km = rescale.ppp(childcare_ck_ppp, 1000, "km")
+childcare_jw_ppp.km = rescale.ppp(childcare_jw_ppp, 1000, "km")
+```
+
+## 2nd Order Spatial Point Patterns Analysis
+
+### Analyze Spatial Point Using G-Function
+
+The G function measures the distribution of the distances from an arbitrary event to its nearest event. In this section, we'll compute G-section estimation using `Gest()` from spatstats library and how to perform monte carlo simulation using `envelope()` of sptatstat library.
+
+#### Choa Chu Kang Planning Area
+
+First, we'll compute G-function estimation with Gest()
+
+```{r}
+set.seed(1234)
+G_CK = Gest(childcare_ck_ppp, correction = "border")
+plot(G_CK, xlim=c(0,500))
+```
+
+And then perform complete spatial randomness test to confirm the spatial pattern. We'll do so using hypothesis test with the following H0 and H1:
+
+-   H0: the distribution services at Choa Chu Kang are not randomly distributed
+
+-   H1: the distribution services at Choa Chu Kang are randomly distributed
+
+The p-value needs to be smaller than alpha value 0.001 for H0 to be rejected.
+
+Next, We'll test using Monte Carlo test with G-function
+
+```{r}
+G_CK.csr <- envelope(childcare_ck_ppp, Gest, nsim = 999)
+```
+
+```{r}
+plot(G_CK.csr)
+```
+
+How can we interpret the result:
+
+-   If G-function increase rapidly at short distance, it means the events are **clustered in a point pattern**
+
+-   If G-function increase slowly up to a distance where most events spaced and then increase rapidly, it means the events are **even in a point pattern**
+
+-   The significance of the G-function is based on the Monte Carlo simulation, of the clustered pattern is above the envelopes, then it is a clustered pattern. If it's below the envelopes, hen it is a regular pattern, while if it's within the envelopes, it's homogenous sitribution (or CSR)
+
+#### Tampines Planning Area
+
+First, we'll compute the G-function estimation using `best` for correction argument.
+
+```{r}
+G_tm = Gest(childcare_tm_ppp, correction = "best")
+plot(G_tm)
+```
+
+The same alpha value (0.001) and hypothesis testing will be done where:
+
+-   H0: the distribution services at Tampines are not randomly distributed
+
+-   H1: the distribution services at Tampines are randomly distributed
+
+We'll use Monte Carlo simulation to confirm our findings
+
+```{r}
+G_tm.csr <- envelope(childcare_tm_ppp, Gest, correction = "all", nsim = 999)
+```
+
+```{r}
+plot(G_tm.csr)
+```
+
+### Analyze Spatial Point Using F-Function
+
+The F-function measures empty space function F(r) or its hazard rate (h(r) form a point pattern in a window of arbitrary shape. In this section, we'll compute F-section estimation using `Fest()` from spatstats library and how to perform monte carlo simulation using `envelope()` of sptatstat library.
+
+#### Choa Chu Kang Planning Area
+
+First, we'll compute F-function estimation with Fest()
+
+```{r}
+F_CK = Fest(childcare_ck_ppp)
+plot(F_CK)
+```
+
+And then perform complete spatial randomness test to confirm the spatial pattern. We'll do so using hypothesis test with the following H0 and H1:
+
+-   H0: the distribution services at Choa Chu Kang are not randomly distributed
+
+-   H1: the distribution services at Choa Chu Kang are randomly distributed
+
+The p-value needs to be smaller than alpha value 0.001 for H0 to be rejected.
+
+Next, We'll test using Monte Carlo test with F-function
+
+```{r}
+F_CK.csr <- envelope(childcare_ck_ppp, Fest, nsim = 999)
+```
+
+```{r}
+plot(F_CK.csr)
+```
+
+How to interpret F-function results:
+
+-   If F(r) rise slowly at first but more rapidly at longer distances, then it is clustered pattern point
+
+-   If F(r) rise rapidly and then slowly at longer distance, it signifies evenness in pattern point.
+
+-   Similar to G-function, the significance test F-function will confirm if it;s a clustered pattern if the line is below the envelopes. If it;s above the envelopes, then it;s a regular pattern, while if the line falls within the envelopes, it's CSR.
+
+#### Tampines Planning Area
+
+First, we'll compute the F-function estimation using `best` for correction argument.
+
+```{r}
+F_tm = Fest(childcare_tm_ppp, correction = "best")
+plot(F_tm)
+```
+
+The same alpha value (0.001) and hypothesis testing will be done where:
+
+-   H0: the distribution services at Tampines are not randomly distributed
+
+-   H1: the distribution services at Tampines are randomly distributed
+
+We'll use Monte Carlo simulation to confirm our findings
+
+```{r}
+F_tm.csr <- envelope(childcare_tm_ppp, Fest, correction = "all", nsim = 999)
+```
+
+```{r}
+plot(F_tm.csr)
+```
+
+### Analyze Spatial Point Using K-Function
+
+The K-function examine the number of events found up to a given distance of any particular event. In this section, we'll compute G-section estimation using `Kest()` from spatstats library and how to perform monte carlo simulation using `envelope()` of sptatstat library.
+
+#### Choa Chu Kang Planning Area
+
+First, we'll compute K-function estimation with Kest()
+
+```{r}
+K_ck = Kest(childcare_ck_ppp, correction = "Ripley")
+plot(K_ck, . -r ~ r, ylab= "K(d)-r", xlab = "d(m)")
+```
+
+And then perform complete spatial randomness test to confirm the spatial pattern. We'll do so using hypothesis test with the following H0 and H1:
+
+-   H0: the distribution services at Choa Chu Kang are not randomly distributed
+
+-   H1: the distribution services at Choa Chu Kang are randomly distributed
+
+The p-value needs to be smaller than alpha value 0.001 for H0 to be rejected.
+
+Next, We'll test using Monte Carlo test with K-function
+
+```{r}
+K_ck.csr <- envelope(childcare_ck_ppp, Kest, nsim = 99, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(K_ck.csr, . - r ~ r, xlab="d", ylab="K(d)-r")
+```
+
+How to interpret K-function results:
+
+-   If K(h) \< 𝜋ℎ\^2, then point pattern is regular
+
+-   If K(h) \> 𝜋ℎ\^2, then point pattern is clustered
+
+-   Significant test are the same as G-function and F-function
+
+#### Tampines Planning Area
+
+First, we'll compute the K-function estimation using `Ripley` for correction argument.
+
+```{r}
+K_tm = Kest(childcare_tm_ppp, correction = "Ripley")
+plot(K_tm, . -r ~ r, 
+     ylab= "K(d)-r", xlab = "d(m)", 
+     xlim=c(0,1000))
+```
+
+The same alpha value (0.001) and hypothesis testing will be done where:
+
+-   H0: the distribution services at Tampines are not randomly distributed
+
+-   H1: the distribution services at Tampines are randomly distributed
+
+We'll use Monte Carlo simulation to confirm our findings
+
+```{r}
+K_tm.csr <- envelope(childcare_tm_ppp, Kest, nsim = 99, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(K_tm.csr, . - r ~ r, 
+     xlab="d", ylab="K(d)-r", xlim=c(0,500))
+```
+
+### Analyze Spatial Point Using L-Function
+
+In practice, the K-function will be normalized to obatin a benchmark of zero. So in this section, we'll compute L-section estimation using `Lest()` from spatstats library and how to perform monte carlo simulation using `envelope()` of sptatstat library.
+
+#### Choa Chu Kang Planning Area
+
+First, we'll compute L-function estimation with Lest()
+
+```{r}
+L_ck = Lest(childcare_ck_ppp, correction = "Ripley")
+plot(L_ck, . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)")
+```
+
+And then perform complete spatial randomness test to confirm the spatial pattern. We'll do so using hypothesis test with the following H0 and H1:
+
+-   H0: the distribution services at Choa Chu Kang are not randomly distributed
+
+-   H1: the distribution services at Choa Chu Kang are randomly distributed
+
+The p-value needs to be smaller than alpha value 0.001 for H0 to be rejected.
+
+Next, We'll test using Monte Carlo test with L-function
+
+```{r}
+L_ck.csr <- envelope(childcare_ck_ppp, Lest, nsim = 99, rank = 1, glocal=TRUE)
+```
+
+How to interpret L-function results:
+
+-   L(r)\>0 means that the observed distribution is geographically concentrated.
+
+-    L(r)\<0 means dispersion.
+
+-   L(r)=0 signifies complete spatial randomness (CRS).
+
+#### Tampines Planning Area
+
+First, we'll compute the L-function estimation using `Ripley` for correction argument.
+
+```{r}
+L_tm = Lest(childcare_tm_ppp, correction = "Ripley")
+plot(L_tm, . -r ~ r, 
+     ylab= "L(d)-r", xlab = "d(m)", 
+     xlim=c(0,1000))
+```
+
+The same alpha value (0.001) and hypothesis testing will be done where:
+
+-   H0: the distribution services at Tampines are not randomly distributed
+
+-   H1: the distribution services at Tampines are randomly distributed
+
+We'll use Monte Carlo simulation to confirm our findings
+
+```{r}
+L_tm.csr <- envelope(childcare_tm_ppp, Lest, nsim = 99, rank = 1, glocal=TRUE)
+```
+
+```{r}
+plot(L_tm.csr, . - r ~ r, 
+     xlab="d", ylab="L(d)-r", xlim=c(0,500))
+```
