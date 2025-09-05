@@ -277,7 +277,7 @@ bw
 
 #### Rescaling KDE Values
 
-As we saw in the summary, the output range was from 0 to 0.0003727443 which is a very small number. This is because the default unit of measurement of svy21 is in meters. So, we can rescale.ppp() to convert the unit of measurement to km.
+As we saw in the summary, the output range was from 0 to 0.0003727443 which is a very small number which makes it difficult to comprehend. This is because the default unit of measurement of svy21 is in meters. So, we can rescale.ppp() to convert the unit of measurement to km.
 
 ```{r}
 childcareSG_ppp_km <- rescale.ppp(
@@ -299,4 +299,280 @@ And plot the kde object again
 plot(kde_childcareSG_km)
 ```
 
-### Working with Different Automatic Bandwidth Methods
+#### Working with Different Automatic Bandwidth Methods
+
+In this section, we'll explore other functions i.e. `bw.CvL()`, `bw.scott()` and `bw.ppl()` to determine bandwidth.
+
+First, let's look at `bw.CvL()` function, which uses the Cronie and van Lieshout's criterion based on Cambell's formula to select a smoothing bandwidth. For more information about the function, check out the <a href="https://search.r-project.org/CRAN/refmans/spatstat.explore/html/bw.CvL.html">documentation</a>.
+
+```{r}
+bw.CvL(childcareSG_ppp_km)
+```
+
+Next, we'll look at `bw.scott()`, which utilizes Scott's rule of thumb to determine smoothing bandwitdth. To learn more about the function, check out the <a href="https://www.rdocumentation.org/packages/spatstat/versions/1.64-1/topics/bw.scott">documentation</a>.
+
+```{r}
+bw.scott(childcareSG_ppp_km)
+```
+
+`bw.ppl()` uses likelihood cross-validation to choose smoothing bandwidth. Learn more about it in the <a href="https://search.r-project.org/CRAN/refmans/spatstat.explore/html/bw.ppl.html">documentation</a>.
+
+```{r}
+bw.ppl(childcareSG_ppp_km)
+```
+
+Note that `bw.diggle()` uses cross-validation to select smoothing bandwidth.
+
+```{r}
+bw.diggle(childcareSG_ppp_km)
+```
+
+Based on Baddeley et. (2016), it is suggested that bw.ppl() algorithm is used because it tend to produce more appropriate values when the pattern consists predominantly of tight clusters. But if the purpose of the study is to detect a single tight cluster, then bw.diggle() works best. Below shows the comparison between using `dw.diggle()` and `bw.ppl()`.
+
+```{r}
+kde_childcareSG.ppl <- density(childcareSG_ppp_km, 
+                               sigma=bw.ppl, 
+                               edge=TRUE,
+                               kernel="gaussian")
+par(mfrow=c(1,2))
+plot(kde_childcareSG_km, main = "bw.diggle")
+plot(kde_childcareSG.ppl, main = "bw.ppl")
+```
+
+#### Working with Different Kernel Methods
+
+Kernel methods are weighting function that determines how much influence each data point has on the estimate around it. There are a few kernel methods available in spatstats, i.e. Epanechnikov, gaussian (default), Quartic and Disc. In this section, we'll use compute the kernel density estimations using Epanechnikov, Quartic and Disc kernel function.
+
+```{r}
+par(mfrow=c(2,2))
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="gaussian"), 
+     main="Gaussian")
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="epanechnikov"), 
+     main="Epanechnikov")
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="quartic"), 
+     main="Quartic")
+plot(density(childcareSG_ppp_km, 
+             sigma=0.2959712, 
+             edge=TRUE, 
+             kernel="disc"), 
+     main="Disc")
+```
+
+#### Fixed and Adaptive KDE
+
+We ca also compute KDE layer by defining a fixed bandwidth of 600 meter.
+
+```{r}
+kde_childcareSG_fb <- density(childcareSG_ppp_km,
+                              sigma=0.6, 
+                              edge=TRUE,
+                              kernel="gaussian")
+plot(kde_childcareSG_fb)
+```
+
+Th code uses `sigma = 0.6` argument since the unit measurement of the object is in kilometer instead of meter.
+
+However, since fixed bandwidth is sensitive to highly skew distribution of spatial point patterns over geographical units (e.g. urban vs rural). So we can use adaptive bandwidth instead.
+
+```{r}
+kde_childcareSG_ab <- adaptive.density(
+  childcareSG_ppp_km, 
+  method="kernel")
+plot(kde_childcareSG_ab)
+```
+
+#### Plotting Cartographic Quality KDE Map
+
+First, we will convert the im kernel density object to SpatRaster object by using the rast() from terra library.
+
+```{r}
+kde_childcareSG_bw_terra <- rast(kde_childcareSG_km)
+```
+
+We can confirm if the object now is a SpatRaster class by using `class()`.
+
+```{r}
+class(kde_childcareSG_bw_terra)
+```
+
+We can also check for its properties.
+
+```{r}
+kde_childcareSG_bw_terra
+```
+
+The crs property, which tells us how the cell coordinates relate to real-world location (latitude and longitude), is empty. we can assign the crs to 3414 by using `crs()`.
+
+```{r}
+crs(kde_childcareSG_bw_terra) <- "EPSG:3414"
+```
+
+We can re-check the properties again to confirm the changes.
+
+```{r}
+kde_childcareSG_bw_terra
+```
+
+Now, we can finally plot KDE map with tmap liek below
+
+```{r}
+tm_shape(kde_childcareSG_bw_terra) + 
+  tm_raster(col.scale = 
+              tm_scale_continuous(
+                values = "viridis"),
+            col.legend = tm_legend(
+            title = "Density values",
+            title.size = 0.7,
+            text.size = 0.7,
+            bg.color = "white",
+            bg.alpha = 0.7,
+            position = tm_pos_in(
+              "right", "bottom"),
+            frame = TRUE)) +
+  tm_graticules(labels.size = 0.7) +
+  tm_compass() +
+  tm_layout(scale = 1.0)
+```
+
+Now, we can see the density values in latitude/longitude as the raster values are encoded explicitly to raster pixel using values in layer.1 field.
+
+### First Order SPPA at Planning Subzone Level
+
+In this section, a further analysis at planning area level will be conducted (specifically, Punggol, Tampines, Choa Chu Kang and Jurong West).
+
+#### Data Wrangling
+
+We'll extract the target planning areas.
+
+```{r}
+pg <- mpsz_cl %>%
+  filter(PLN_AREA_N == "PUNGGOL")
+tm <- mpsz_cl %>%
+  filter(PLN_AREA_N == "TAMPINES")
+ck <- mpsz_cl %>%
+  filter(PLN_AREA_N == "CHOA CHU KANG")
+jw <- mpsz_cl %>%
+  filter(PLN_AREA_N == "JURONG WEST")
+```
+
+And review the extracted areas.
+
+```{r}
+par(mfrow=c(2,2))
+plot(st_geometry(pg), main = "Ponggol")
+plot(st_geometry(tm), main = "Tampines")
+plot(st_geometry(ck), main = "Choa Chu Kang")
+plot(st_geometry(jw), main = "Jurong West")
+```
+
+Like before, we'll create the owin and combine with point events objects.
+
+```{r}
+pg_owin = as.owin(pg)
+tm_owin = as.owin(tm)
+ck_owin = as.owin(ck)
+jw_owin = as.owin(jw)
+```
+
+```{r}
+childcare_pg_ppp = childcare_ppp[pg_owin]
+childcare_tm_ppp = childcare_ppp[tm_owin]
+childcare_ck_ppp = childcare_ppp[ck_owin]
+childcare_jw_ppp = childcare_ppp[jw_owin]
+```
+
+And then use rescale.ppp() to change unit of measurement from meter to kilometer.
+
+```{r}
+childcare_pg_ppp.km = rescale.ppp(childcare_pg_ppp, 1000, "km")
+childcare_tm_ppp.km = rescale.ppp(childcare_tm_ppp, 1000, "km")
+childcare_ck_ppp.km = rescale.ppp(childcare_ck_ppp, 1000, "km")
+childcare_jw_ppp.km = rescale.ppp(childcare_jw_ppp, 1000, "km")
+```
+
+Below are the visualization of locations of childcare centres in each planning subzone area.
+
+```{r}
+par(mfrow=c(2,2))
+plot(unmark(childcare_pg_ppp.km), 
+  main="Punggol")
+plot(unmark(childcare_tm_ppp.km), 
+  main="Tampines")
+plot(unmark(childcare_ck_ppp.km), 
+  main="Choa Chu Kang")
+plot(unmark(childcare_jw_ppp.km), 
+  main="Jurong West")
+```
+
+#### Clark-Evans Test
+
+The `clarkevans.test()` is used to for each planning area
+
+```{r}
+clarkevans.test(childcare_ck_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999) #choa chu kang
+```
+
+```{r}
+clarkevans.test(childcare_tm_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999) # tampines
+```
+
+```{r}
+clarkevans.test(childcare_pg_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999) # punggol
+```
+
+```{r}
+clarkevans.test(childcare_jw_ppp,
+                correction="none",
+                clipregion=NULL,
+                alternative=c("two.sided"),
+                nsim=999) #jurong west
+```
+
+#### Compute KDE Surfaces by Planning Area
+
+Below, we'll use `bw.diggle()` to derive bandwidth of each planning area
+
+```{r}
+par(mfrow=c(2,2))
+plot(density(childcare_pg_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Punggol")
+plot(density(childcare_tm_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Tempines")
+plot(density(childcare_ck_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Choa Chu Kang")
+plot(density(childcare_jw_ppp.km, 
+             sigma=bw.diggle, 
+             edge=TRUE, 
+             kernel="gaussian"),
+     main="Jurong West")
+```
