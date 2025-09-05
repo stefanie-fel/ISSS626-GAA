@@ -10,25 +10,11 @@ execute:
   freeze: true
 ---
 
-Getting Started
+## Getting Started
 
-Objective of this exercise is to import, wrangle, integrate and process geospatial data sets using:
+Objective of this exercise is discover aspatial point processes of childcare centers in Singapore by using 2nd order spatial point patterns analysis,w which unlike 1st order that only observe the distributions of points in the surface, the 2nd order examine spatial relationships between points ina pattern (how one point can influence the location of another point). In this exercise, we will be using spatstat library to answer teh following questions:
 
-sf library to import geospatial data
-
-readr library to import aspatial data
-
-Use Base R adnd sf libraries yto explore contents fof simple feature data frame
-
-Use sf library to transform or assign coordinate systems
-
-Convert aspatial data into sf data frame and perform geoprocessing tasks using sf library
-
-Use dpylr library to do data wrangling
-
-Perform EDA using ggplot2
-
-Import Libraries
+## Import Libraries
 
 {r} pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)
 

@@ -135,8 +135,15 @@ ul.task-list li input[type="checkbox"] {
 <div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
-        
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#getting-started" id="toc-getting-started" class="nav-link active" data-scroll-target="#getting-started">Getting Started</a></li>
+  <li><a href="#import-libraries" id="toc-import-libraries" class="nav-link" data-scroll-target="#import-libraries">Import Libraries</a></li>
+  </ul>
+</nav>
     </div>
 <!-- main -->
 <main class="content" id="quarto-document-content">
@@ -178,16 +185,12 @@ ul.task-list li input[type="checkbox"] {
 </header>
 
 
-<p>Getting Started</p>
-<p>Objective of this exercise is to import, wrangle, integrate and process geospatial data sets using:</p>
-<p>sf library to import geospatial data</p>
-<p>readr library to import aspatial data</p>
-<p>Use Base R adnd sf libraries yto explore contents fof simple feature data frame</p>
-<p>Use sf library to transform or assign coordinate systems</p>
-<p>Convert aspatial data into sf data frame and perform geoprocessing tasks using sf library</p>
-<p>Use dpylr library to do data wrangling</p>
-<p>Perform EDA using ggplot2</p>
-<p>Import Libraries</p>
+<section id="getting-started" class="level2">
+<h2 class="anchored" data-anchor-id="getting-started">Getting Started</h2>
+<p>Objective of this exercise is discover aspatial point processes of childcare centers in Singapore by using 2nd order spatial point patterns analysis,w which unlike 1st order that only observe the distributions of points in the surface, the 2nd order examine spatial relationships between points ina pattern (how one point can influence the location of another point). In this exercise, we will be using spatstat library to answer teh following questions:</p>
+</section>
+<section id="import-libraries" class="level2">
+<h2 class="anchored" data-anchor-id="import-libraries">Import Libraries</h2>
 <p>{r} pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)</p>
 <p>The libraries used in this exercise would be:</p>
 <p>sf: simple features in R to encode and analyze spatial vector data</p>
@@ -208,6 +211,7 @@ ul.task-list li input[type="checkbox"] {
 <p>st_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data dsn argument i sused to define data path and layer is used to provide shapefile name without extension.</p>
 
 
+</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">

@@ -165,6 +165,20 @@
     "href": "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b.html",
     "title": "Hands-on Exercise 2b",
     "section": "",
-    "text": "Getting Started\nObjective of this exercise is to import, wrangle, integrate and process geospatial data sets using:\nsf library to import geospatial data\nreadr library to import aspatial data\nUse Base R adnd sf libraries yto explore contents fof simple feature data frame\nUse sf library to transform or assign coordinate systems\nConvert aspatial data into sf data frame and perform geoprocessing tasks using sf library\nUse dpylr library to do data wrangling\nPerform EDA using ggplot2\nImport Libraries\n{r} pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)\nThe libraries used in this exercise would be:\nsf: simple features in R to encode and analyze spatial vector data\nreadr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\ndplyr: grammar of data manipulation (to work with data frame like objects)\ntidyverse: collection of R packages that for data manipulation and visualization\ntidyr: tool to create tidy data\nggplot2: create graphics based on “the Grammar of Objects”\nThe Data\nIn this hands-on exercise, we’ll be using the following datasets:\nMaster Plan 2014 Subzone Boundary (Web)\nPre-schools Location\nCycling Path\nListing data of Airbnb\nImport Geospatial Data\nIn this section, we’ll learn to import geosptial data using st_read().\nImport Polygon Data in Shapefile Format\nst_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data dsn argument i sused to define data path and layer is used to provide shapefile name without extension."
+    "text": "Objective of this exercise is discover aspatial point processes of childcare centers in Singapore by using 2nd order spatial point patterns analysis,w which unlike 1st order that only observe the distributions of points in the surface, the 2nd order examine spatial relationships between points ina pattern (how one point can influence the location of another point). In this exercise, we will be using spatstat library to answer teh following questions:"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b.html#getting-started",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b.html#getting-started",
+    "title": "Hands-on Exercise 2b",
+    "section": "",
+    "text": "Objective of this exercise is discover aspatial point processes of childcare centers in Singapore by using 2nd order spatial point patterns analysis,w which unlike 1st order that only observe the distributions of points in the surface, the 2nd order examine spatial relationships between points ina pattern (how one point can influence the location of another point). In this exercise, we will be using spatstat library to answer teh following questions:"
+  },
+  {
+    "objectID": "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b.html#import-libraries",
+    "href": "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b.html#import-libraries",
+    "title": "Hands-on Exercise 2b",
+    "section": "Import Libraries",
+    "text": "Import Libraries\n{r} pacman::p_load(sf, readr, dplyr, tidyr, tidyverse, ggplot2)\nThe libraries used in this exercise would be:\nsf: simple features in R to encode and analyze spatial vector data\nreadr: fast way to read rectangular data from delimited files (e.g. csv and tsv)\ndplyr: grammar of data manipulation (to work with data frame like objects)\ntidyverse: collection of R packages that for data manipulation and visualization\ntidyr: tool to create tidy data\nggplot2: create graphics based on “the Grammar of Objects”\nThe Data\nIn this hands-on exercise, we’ll be using the following datasets:\nMaster Plan 2014 Subzone Boundary (Web)\nPre-schools Location\nCycling Path\nListing data of Airbnb\nImport Geospatial Data\nIn this section, we’ll learn to import geosptial data using st_read().\nImport Polygon Data in Shapefile Format\nst_read of sf library will be used to import the Master Plan 2014 Subzone Boundary shapefile into R as polygon feature data frame. When importing the data dsn argument i sused to define data path and layer is used to provide shapefile name without extension."
   }
 ]
