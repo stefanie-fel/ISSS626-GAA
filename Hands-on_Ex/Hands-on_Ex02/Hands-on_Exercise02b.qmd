@@ -334,7 +334,7 @@ How to interpret L-function results:
 
 -   L(r)\>0 means that the observed distribution is geographically concentrated.
 
--    L(r)\<0 means dispersion.
+-   L(r)\<0 means dispersion.
 
 -   L(r)=0 signifies complete spatial randomness (CRS).
 

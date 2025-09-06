@@ -15,6 +15,10 @@ website:
           href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02a"
         - text: "Hands-on Exrcise 2b"
           href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b"
+      - text: "Take-home Exercise"
+        menu:
+        - text: "Take Home 1"
+          href: "Take-home_Ex/Take-home_Ex01/Take-home_Ex01"
     right:
       - href: index.qmd
         text: Home
