@@ -1,0 +1,67 @@
+project:
+  type: website
+
+website:
+  title: "ISSS626-GAA"
+  navbar:
+    left:
+      - text: "Hands-on Exercise"
+        menu:
+        - text: "Hands-on Exercise 1a"
+          href: "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01.html"
+        - text: "Hands-on Exercise 1b"
+          href: "Hands-on_Ex/Hands-on_Ex01/Hands-on_Ex01b.html"
+        - text: "Hands-on Exercise 2a"
+          href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02a.html"
+        - text: "Hands-on Exercise 2b"
+          href: "Hands-on_Ex/Hands-on_Ex02/Hands-on_Exercise02b.html"
+        - text: "Hands-on Exercise 3"
+          href: "Hands-on_Ex/Hands-on_Ex03/Hands-on_Ex03.html"
+        - text: "Hands-on Exercise 4"
+          href: "Hands-on_Ex/Hands-on_Ex04/Hands-on_Ex04.html"
+        - text: "Hands-on Exercise 5a"
+          href: "Hands-on_Ex/Hands-on_Ex05/Hands-on_Ex05a.html"
+        - text: "Hands-on Exercise 5b"
+          href: "Hands-on_Ex/Hands-on_Ex05/Hands-on_Ex05b.html"
+        - text: "Hands-on Exercise 6"
+          href: "Hands-on_Ex/Hands-on_Ex06/Hands-on_Ex06.html"
+        - text: "Hands-on Exercise 7"
+          href: "Hands-on_Ex/Hands-on_Ex07/Hands-on_Ex07.html"
+      - text: "In-class Exercise"
+        menu:
+        - text: "In-class Exercise 3a"
+          href: "In-class_Ex/In-class_Ex03/In-class_Ex03a.html"
+        - text: "In-class Exercise 3b"
+          href: "In-class_Ex/In-class_Ex03/In-class_Ex03b.html"
+        - text: "In-class Exercise 4"
+          href: "In-class_Ex/In-class_Ex04/In-class_Ex04.html"
+        - text: "In-class Exercise 5a"
+          href: "In-class_Ex/In-class_Ex05/In-class_Ex05.html"
+        - text: "In-class Exercise 5b"
+          href: "In-class_Ex/In-class_Ex05/In-class_05b.html"
+        - text: "In-class Exercise 6"
+          href: "In-class_Ex/In-class_Ex06/In-class_06.html"
+        - text: "In-class Exercise 7"
+          href: "In-class_Ex/In-class_Ex06/In-class_07.html"
+      - text: "Take-home Exercise"
+        menu:
+        - text: "Take Home 1"
+          href: "Take-home_Ex/Take-home_Ex01/Take-home_Ex01.html"
+        - text: "Take Home 1b"
+          href: "Take-home_Ex/Take-home_Ex01/Take-home_Ex01b.html"
+        - text: "Take Home 2"
+          href: "Take-home_Ex/Take-home_Ex02/Take-home_Ex02.html"
+    right:
+      - href: index.qmd
+        text: Home
+      - about.qmd
+
+format:
+  html:
+    theme:
+      - journal
+    css: styles.css
+    toc: true
+
+editor: visual
+
