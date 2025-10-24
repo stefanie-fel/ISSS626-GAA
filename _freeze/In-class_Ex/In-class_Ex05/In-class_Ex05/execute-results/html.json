@@ -1,0 +1,17 @@
+{
+  "hash": "3dc934217941c2fc0c7087f76adf146f",
+  "result": {
+    "engine": "knitr",
+    "markdown": "---\ntitle: \"In-class Exercise 5\"\nauthor: \"Stefanie Felicia\"\ndate: \"27 September, 2025\"\ndate-modified: \"last-modified\"\nexecute: \n  eval: true\n  echo: true\n  warning: false\n  freeze: true\n---\n\n# Global and local Measures of Spatial Autocorrelation\n\n## Import libraries\n\n\n::: {.cell}\n\n```{.r .cell-code}\npacman::p_load(sf,sfdep,tmap,tidyverse)\n```\n:::\n\n\n## The Data - Importing 'Hunan' table\n\n\n::: {.cell}\n\n```{.r .cell-code}\n hunan_sf <- st_read(dsn = \"data/geospatial\", layer = \"Hunan\")\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\nReading layer `Hunan' from data source \n  `C:\\stefanie-fel\\ISSS626-GAA\\In-class_Ex\\In-class_Ex05\\data\\geospatial' \n  using driver `ESRI Shapefile'\nSimple feature collection with 88 features and 7 fields\nGeometry type: POLYGON\nDimension:     XY\nBounding box:  xmin: 108.7831 ymin: 24.6342 xmax: 114.2544 ymax: 30.12812\nGeodetic CRS:  WGS 84\n```\n\n\n:::\n:::\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\n hunan_2012 <- read_csv(\"data/aspatial/Hunan_2012.csv\")\n```\n:::\n\n\n## Joining Hunan and Hunan_2012\n\n\n::: {.cell}\n\n```{.r .cell-code}\nhunan_GDPPC <- left_join(hunan_sf, hunan_2012) %>% select(1:4, 7, 15)\n```\n:::\n\n\n## Visualising geographically weighted summary statistics\n\n\n::: {.cell}\n\n```{.r .cell-code}\ntm_shape(hunan_GDPPC) + tm_fill(\"GDPPC\", \n          n = 5, \n          style = \"quantile\") + \n  tm_borders(alpha = 0.5) + \n  tm_layout(main.title = \"Distribution of geographically weighted mean\", \n            main.title.position = \"center\", \n            main.title.size = 1.8, \n            legend.text.size = 1.2, \n            legend.height = 1.50, \n            legend.width = 1.50, \n            frame = TRUE)\n```\n\n::: {.cell-output-display}\n![](In-class_Ex05_files/figure-html/unnamed-chunk-5-1.png){width=672}\n:::\n:::\n\n\n## Deriving Queen's contiguity weights: sfdep methods\n\n\n::: {.cell}\n\n```{.r .cell-code}\nwm_q <- hunan_GDPPC %>% mutate(nb = st_contiguity(geometry), wt = st_weights(nb, style = \"W\"), .before = 1)\n```\n:::\n\n\n## Performing Global Moran'I permutation test\n\n\n::: {.cell}\n\n```{.r .cell-code}\nset.seed(1234)\n```\n:::\n\n\n\n::: {.cell}\n\n```{.r .cell-code}\nglobal_moran_perm(wm_q$GDPPC,\n                  wm_q$nb, wm_q$wt, nsim=99)\n```\n\n::: {.cell-output .cell-output-stdout}\n\n```\n\n\tMonte-Carlo simulation of Moran I\n\ndata:  x \nweights: listw  \nnumber of simulations + 1: 100 \n\nstatistic = 0.30075, observed rank = 100, p-value < 2.2e-16\nalternative hypothesis: two.sided\n```\n\n\n:::\n:::\n\n",
+    "supporting": [
+      "In-class_Ex05_files"
+    ],
+    "filters": [
+      "rmarkdown/pagebreak.lua"
+    ],
+    "includes": {},
+    "engineDependencies": {},
+    "preserve": {},
+    "postProcess": true
+  }
+}
