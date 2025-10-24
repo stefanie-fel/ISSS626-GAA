@@ -1,0 +1,115 @@
+---
+title: "In-class Exercise 6"
+author: "Stefanie Felicia"
+date: "4 October, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+```{r}
+pacman::p_load(tidyverse, sf, sfdep, tmap, knitr)
+```
+
+```{r}
+mpsz <- read_rds("data/rds/mpsz_cl.rds")
+```
+
+```{r}
+busStop <- st_read(dsn = "data/LTADataMall", 
+                 layer = "BusStop") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+odbus <- read_csv("data/origin_destination_bus_202508.csv")
+```
+
+```{r}
+tm_shape(mpsz) + tm_polygons(col = "lightgrey", border.col = "white") + tm_shape(busStop) + tm_dots(ol="red", size = 0.1)
+```
+
+Since the visualization includes bus stops that are outside of Singapore, we should combine both geometry data and data points using st_joins.
+
+```{r}
+busStop_in_SG <- st_join(
+  busStop, mpsz, 
+  join = st_within, 
+  left=FALSE)
+```
+
+```{r}
+tm_shape(mpsz) + tm_polygons(col = "lightgrey", border.col = "white") + tm_shape(busStop_in_SG) + tm_dots(ol="red", size = 0.1)
+```
+
+Next, we'll create grid layer and take hexagon with bus stops and exclude those areas without bus stop (either grid square or hexagon, or even traingle, etc)
+
+```{r}
+hexagon <- st_make_grid(mpsz, cellsize = 700, # diameter is 700 from center to edge
+                        what = "polygon", # returns hexagon layer
+                        square = FALSE) %>%
+  st_sf() # make large sfc_polygon data into sf tabular (list) dataframe
+```
+
+Since the hexagon table only have 1 column which is the polygon data, we need to assign id to each hexagon to know which it is.
+
+```{r}
+hexagon$n_collisions = #return true or false if hexagon intersect the bus stop
+  lengths(st_intersects(hexagon, busStop_in_SG))
+
+hexagon <- filter(hexagon, n_collisions > 0) # filter to only store hexagons that has bus stop
+```
+
+::: callout-note
+-   `hexagon$n_collisions` returns if hexagon intersects the bus stop
+
+-   `lengths(st_intersects(hexagon, busStop_in_SG))` : st_intersections return output of geomteric cut, while this function return true or false (in numerical value; 0 means none or values \> 1 meaning the total number of bus stops within the hexagon),
+
+-   `filter(hexagon, n_collisions > 0)` : filter to only store hexagons that has bus stop
+:::
+
+```{r}
+hexagon <- hexagon %>%
+  select(, -n_collisions)
+
+hexagon$HEX_ID <- sprintf(
+  "H%04d", seq_len(nrow(hexagon))) %>% # start with 0
+  as.factor() #ordinal scale
+
+kable(head(hexagon))
+```
+
+## Preparing Trip Generation Data
+
+### Cleaning Data
+
+```{r}
+trips <- odbus %>%
+  select(c(ORIGIN_PT_CODE, DAY_TYPE, TIME_PER_HOUR, TOTAL_TRIPS)) %>%
+  rename(BUS_STOP_N = ORIGIN_PT_CODE) %>%
+  rename(HOUR_OF_DAY = TIME_PER_HOUR) %>%
+  rename(TRIPS = TOTAL_TRIPS)
+trips$BUS_STOP_N <- as.factor(trips$BUS_STOP_N) # so that it cannot be converted accidentally to numerical column
+kable(head(trips))
+```
+
+```{r}
+# combine bus stop and hexagon (layer) data
+bs_hex <- st_intersection(
+  busStop, hexagon) %>%
+   st_drop_geometry() %>% #geometry will be replaced with hexagon 
+  select(c(BUS_STOP_N, HEX_ID))
+
+kable(head(bs_hex))
+  
+```
+
+### Add HEX_ID into bus trip data
+
+```{r}
+trips <- inner_join(trips, bs_hex)
+kable(head(trips))
+```

@@ -1,0 +1,327 @@
+---
+title: "In-class_Ex07"
+format: html
+---
+
+```{r}
+pacman::p_load(olsrr, corrplot, ggpubr, 
+               sf, sfdep, GWmodel, tmap, 
+               tidyverse, gtsummary,
+               performance, RColorBrewer)
+```
+
+The libraries used in this exercise would be:
+
+-   olsrr
+
+-   ggpubr
+
+-   sf
+
+-   sfdep
+
+-   GWmodel
+
+-   tidyverse
+
+-   tmap
+
+-   gtsummary
+
+-   performance
+
+-   RColorBrewer
+
+## The Data
+
+We'll be using the following dataset for this hands on exercise:
+
+-   URA Mater Plan Subzone boundary (shapefile format)
+
+-   condo_resale_2015 (csv file)
+
+## Import Data
+
+We'll import the shapefile dataset with st_read(). The dataset consist of URA Master Plan 2014 planning subzone boundaries and it's in svy21 projected coordinate systems.
+
+```{r}
+mpsz = st_read(dsn = "data/geospatial", 
+               layer = "MP14_SUBZONE_WEB_PL")
+```
+
+```{r}
+mpsz_svy21 <- st_transform(mpsz, 3414)
+```
+
+```{r}
+st_crs(mpsz_svy21)
+```
+
+```{r}
+condo_resale = read_csv(
+  "data/aspatial/Condo_resale_2015.csv")
+```
+
+```{r}
+condo_resale.sf <- st_as_sf(condo_resale,
+                            coords = c("LONGITUDE", "LATITUDE"),
+                            crs=4326) %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+condo_resale.sf <- condo_resale.sf %>%
+  mutate(`LOG_SELLING_PRICE` = log(SELLING_PRICE))
+names(condo_resale.sf)
+```
+
+```{r}
+condo.mlr1 <- lm(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+    PROX_CBD + PROX_CHILDCARE + PROX_MRT +
+    PROX_ELDERLYCARE    + PROX_URA_GROWTH_AREA +
+    PROX_PARK   + PROX_PRIMARY_SCH + 
+    PROX_SHOPPING_MALL  + PROX_BUS_STOP + 
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data=condo_resale.sf)
+summary(condo.mlr1)
+```
+
+
+```{r}
+mlr.output <- as.data.frame(condo.mlr1$residuals)
+```
+
+
+
+```{r}
+names(condo_resale.sf)
+```
+
+```{r}
+condo_resale.sf <- cbind(condo_resale.sf, 
+                        condo.mlr1$residuals)  %>%
+rename(`MLR_RES` = `condo.mlr1.residuals`)
+
+names(condo_resale.sf)
+```
+
+```{r}
+condo_resale.sf <- condo_resale.sf %>% 
+  mutate(
+    nb = st_dist_band(
+      st_geometry(geometry), 
+                 upper = 1500),
+    wt = st_weights(
+      nb, style = "W"),
+    .before = 1) 
+
+```
+
+```{r}
+set.seed(1234)
+global_moran_perm(
+  condo_resale.sf$MLR_RES, 
+  nb = condo_resale.sf$nb, 
+  wt = condo_resale.sf$wt,
+  alternative = "two.sided", 
+  nsim = 499)
+```
+
+```{r}
+bw.adaptive <- bw.gwr(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE  + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE    +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL   + 
+    PROX_BUS_STOP   + NO_Of_UNITS + 
+    FAMILY_FRIENDLY + FREEHOLD, 
+  data=condo_resale.sf, 
+  approach="AIC", 
+  kernel="gaussian", 
+  adaptive=TRUE, 
+  longlat=FALSE)
+```
+
+```{r}
+gwr.adaptive <- gwr.basic(
+  formula = SELLING_PRICE ~ AREA_SQM + AGE + 
+    PROX_CBD + PROX_CHILDCARE + PROX_ELDERLYCARE +
+    PROX_URA_GROWTH_AREA + PROX_MRT + PROX_PARK +
+    PROX_PRIMARY_SCH + PROX_SHOPPING_MALL + PROX_BUS_STOP +
+    NO_Of_UNITS + FAMILY_FRIENDLY + FREEHOLD,
+  data=condo_resale.sf, 
+  bw=bw.adaptive, 
+  kernel = 'gaussian', 
+  adaptive=TRUE, 
+  longlat = FALSE)
+```
+
+```{r}
+gwr.adaptive
+```
+
+CONVERT SDF INTO SF DATA FRAME
+
+```{r}
+condo_resale.sf.adaptive <-
+  st_as_sf(gwr.adaptive$SDF) %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+glimpse(condo_resale.sf.adaptive)
+```
+
+```{r}
+tmap_mode("plot")
+tm_shape(mpsz_svy21)+
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(col = "Local_R2",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
+
+
+```
+
+```{r}
+AREA_SQM_SE <- tm_shape(mpsz_svy21)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(col = "AREA_SQM_SE",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
+
+AREA_SQM_TV <- tm_shape(mpsz_svy21)+
+  tm_polygons(alpha = 0.1) +
+tm_shape(condo_resale.sf.adaptive) +  
+  tm_dots(col = "AREA_SQM_TV",
+          border.col = "gray60",
+          border.lwd = 1) +
+  tm_view(set.zoom.limits = c(11,14))
+
+tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
+             asp=1, ncol=2,
+             sync = TRUE)
+
+tmap_mode("plot")
+```
+
+## Analyzing R² Distribution in Novena Planning Area
+
+
+### Extracting Novena Data
+
+
+# Extract Novena planning area boundary
+
+
+```{r}
+novena_boundary <- mpsz_svy21 %>% 
+  filter(PLN_AREA_N == "NOVENA")
+```
+
+# Filter GWR results for Novena area
+
+```{r}
+novena_gwr <- condo_resale.sf.adaptive %>% 
+  st_join(novena_boundary) %>% 
+  filter(!is.na(PLN_AREA_N))
+
+```
+
+# Check the number of observations in Novena
+
+```{r}
+nrow(novena_gwr)
+```
+
+### Summary Statistics of R² in Novena
+
+
+# Summary of Local R² in Novena
+
+```{r}
+novena_r2_summary <- summary(novena_gwr$Local_R2)
+novena_r2_summary
+```
+# Additional statistics
+
+```{r}
+novena_r2_stats <- novena_gwr %>% 
+  st_drop_geometry() %>% 
+  summarise(
+    n = n(),
+    mean_r2 = mean(Local_R2),
+    median_r2 = median(Local_R2),
+    sd_r2 = sd(Local_R2),
+    min_r2 = min(Local_R2),
+    max_r2 = max(Local_R2),
+    q1_r2 = quantile(Local_R2, 0.25),
+    q3_r2 = quantile(Local_R2, 0.75)
+  )
+novena_r2_stats
+```
+
+### Visualizing R² Distribution in Novena
+
+
+# Histogram of Local R² in Novena
+
+```{r}
+ggplot(novena_gwr, aes(x = Local_R2)) +
+  geom_histogram(bins = 15, fill = "lightblue", color = "black", alpha = 0.7) +
+  geom_vline(aes(xintercept = mean(Local_R2)), color = "red", linetype = "dashed", size = 1) +
+  labs(title = "Distribution of Local R² in Novena Planning Area",
+       x = "Local R²",
+       y = "Frequency") +
+  theme_minimal()
+```
+
+### Spatial Distribution of R² in Novena
+
+
+# Map of Local R² in Novena
+```{r}
+tm_shape(novena_boundary) +
+  tm_polygons(alpha = 0.3, col = "lightgray") +
+tm_shape(novena_gwr) +
+  tm_dots(col = "Local_R2", 
+          palette = "RdYlBu",
+          style = "quantile",
+          size = 0.8,
+          title = "Local R²") +
+  tm_layout(main.title = "Local R² Distribution in Bishan Planning Area",
+            legend.outside = TRUE)
+```
+
+
+### Comparison with Overall R² Distribution
+
+
+# Compare Novena with overall distribution
+
+```{r}
+overall_r2_stats <- condo_resale.sf.adaptive %>% 
+  st_drop_geometry() %>% 
+  summarise(
+    n = n(),
+    mean_r2 = mean(Local_R2),
+    median_r2 = median(Local_R2),
+    sd_r2 = sd(Local_R2)
+  )
+```
+
+```{r}
+comparison <- data.frame(
+  Area = c("Novena overall"),
+  Mean_R2 = c(novena_r2_stats$mean_r2, overall_r2_stats$mean_r2),
+  Median_R2 = c(novena_r2_stats$median_r2, overall_r2_stats$median_r2),
+  SD_R2 = c(novena_r2_stats$sd_r2, overall_r2_stats$sd_r2)
+)
+comparison
+```
+ 

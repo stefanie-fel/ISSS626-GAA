@@ -1,0 +1,68 @@
+---
+title: "In-class Exercise 5"
+author: "Stefanie Felicia"
+date: "27 September, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+# Global and local Measures of Spatial Autocorrelation
+
+## Import libraries
+
+```{r}
+pacman::p_load(sf,sfdep,tmap,tidyverse)
+```
+
+## The Data - Importing 'Hunan' table
+
+```{r}
+ hunan_sf <- st_read(dsn = "data/geospatial", layer = "Hunan")
+```
+
+```{r}
+ hunan_2012 <- read_csv("data/aspatial/Hunan_2012.csv")
+```
+
+## Joining Hunan and Hunan_2012
+
+```{r}
+hunan_GDPPC <- left_join(hunan_sf, hunan_2012) %>% select(1:4, 7, 15)
+```
+
+## Visualising geographically weighted summary statistics
+
+```{r}
+tm_shape(hunan_GDPPC) + tm_fill("GDPPC", 
+          n = 5, 
+          style = "quantile") + 
+  tm_borders(alpha = 0.5) + 
+  tm_layout(main.title = "Distribution of geographically weighted mean", 
+            main.title.position = "center", 
+            main.title.size = 1.8, 
+            legend.text.size = 1.2, 
+            legend.height = 1.50, 
+            legend.width = 1.50, 
+            frame = TRUE)
+```
+
+## Deriving Queen's contiguity weights: sfdep methods
+
+```{r}
+wm_q <- hunan_GDPPC %>% mutate(nb = st_contiguity(geometry), wt = st_weights(nb, style = "W"), .before = 1)
+```
+
+## Performing Global Moran'I permutation test
+
+```{r}
+set.seed(1234)
+```
+
+```{r}
+global_moran_perm(wm_q$GDPPC,
+                  wm_q$nb, wm_q$wt, nsim=99)
+```
