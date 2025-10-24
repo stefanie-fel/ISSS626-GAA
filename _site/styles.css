@@ -10,6 +10,6 @@
   font-family: "Vend Sans", sans-serif;
 }
 
-.navbar .dropdown-menu .dropdown-item {
+.navbar .dropdown-menu a.dropdown-item {
   color: black !important;  
 }
