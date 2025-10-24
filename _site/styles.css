@@ -9,3 +9,7 @@
   color: white !important;
   font-family: "Vend Sans", sans-serif;
 }
+
+.navbar .dropdown-menu .dropdown-item {
+  color: black !important;  
+}
