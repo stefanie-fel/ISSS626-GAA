@@ -365,7 +365,6 @@ tbl_regression(condo.mlr1,
                 p.value, sigma))
 ```
 
-
 ### Regression Diagnositics
 
 ```{r}

@@ -1,0 +1,166 @@
+---
+title: "Hands-on Exercise 8"
+author: "Stefanie Felicia"
+date: "25 October, 2025"
+date-modified: "last-modified"
+execute: 
+  eval: true
+  echo: true
+  warning: false
+  freeze: true
+---
+
+## Getting Started
+
+Predictive model use statistical learning or machine learning techniques to predict its outcome in the future using relevant variables.
+
+Geospatial predictive modeling is conceptually rooted in the principle that the occurrences of events being modeled are limited in distribution. When geographically referenced data are used, occurrences of events are neither uniform nor random in distribution over space. There are geospatial factors (infrastructure, sociocultural, topographic, etc) that constrain and influence where the location of events occur. Geospatial predictive modeling attempt to describe those constraints and influences by spatially correlating occurrences of historical geospatial locations with environmental factors. So in this hands on exercise, we'll learn to build predictive model using geographical random frorest method.
+
+## Import Libraries
+
+```{r}
+pacman::p_load(sf, spdep, GWmodel, SpatialML, 
+               tmap, rsample, Metrics, tidyverse)
+```
+
+The libraries used in this exercise are:
+
+\*
+
+## The Data
+
+The data we'll be using in this hands on exercise are:
+
+-   HDB Resale data: list of HDB resale transaction prices in Singapore from Jan 2017 onwards
+
+-   MP14_SUBZONE_WEB_PL: polygon feature data providing information of URA 2014 Master Plan Planning Subzone Boundary data (ESRI shapefile)
+
+-   Location factors with geographic coordinates:
+
+    -   Eldercare data: list of eldercare in Singapore (from data.gov.sg)
+
+    -   Hawker centre: list of hawker centre in Singapore (from data.gov.sg)
+
+    -   Supermarket: list of supermarket in Singapore (from data.gov.sg)
+
+    -   Park: list of parks in Singapore (from data.gov.sg)
+
+    -   CHAS Clinic: list of CHAS clinic in Singapore (from data.gov.sg)
+
+    -   Childcare Service: list of childcare service in Singapore (from data.gov.sg)
+
+    -   Kindergatens: list of kindergarten in Singapore (from data.gov.sg)
+
+    -   MRT data: list of MRT/LRT stations in Singapore with station name and codes (from datamall.lta.gov.sg)
+
+    -   Bus Stop: list of bus stops in Singapore (from datamall.lta.gov.sg)
+
+-   Locational factors without geographic coordinates:
+
+    -   Primary school: data extracted from the list on General Information of schools
+
+    -   CBD coordinates (from Google)
+
+    -   Shopping malls: list of shopping amlls in Singapore (from Wikipedia)
+
+    -   Good primary schools: list of primary schools ordered by popularity ranking (from local Salary Forum)
+
+Data Preparation
+
+```{r}
+mdata <- read_rds("data/rawdata/mdata.rds")
+```
+
+Data Sampling Next, we'll split the dataset 65% and 35% by using initial_split()
+
+```{r}
+set.seed(1234)
+resale_split <- initial_split(mdata, 
+                              prop = 6.5/10,)
+train_data <- training(resale_split)
+test_data <- testing(resale_split)
+```
+
+```{r}
+write_rds(train_data, "data/model/train_data.rds")
+write_rds(test_data, "data/model/test_data.rds")
+```
+
+Derive Correlation Matrix
+
+```{r}
+mdata_nogeo <- mdata %>%
+  st_drop_geometry()
+corrplot::corrplot(cor(mdata_nogeo[, 2:17]), 
+                   diag = FALSE, 
+                   order = "AOE",
+                   tl.pos = "td", 
+                   tl.cex = 0.5, 
+                   method = "number", 
+                   type = "upper")
+```
+
+```{r}
+train_data <- read_rds("data/model/train_data.rds")
+test_data <- read_rds("data/model/test_data.rds")
+```
+
+```{r, eval=FALSE}
+price_mlr <- lm(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_data)
+summary(price_mlr)
+```
+
+gwr Predictive Model
+
+Compute Adaptive Bandwidth
+
+```{r, eval=FALSE}
+bw_adaptive <- bw.gwr(
+  formula = resale_price ~ floor_area_sqm +
+    storey_order + remaining_lease_mths +
+    PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+    PROX_MRT + PROX_PARK + PROX_MALL + 
+    PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+    WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+    WITHIN_1KM_PRISCH,
+  data=train_data,
+  approach="CV",
+  kernel="gaussian",
+  adaptive=TRUE,
+  longlat=FALSE)
+
+write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
+```
+
+Construct Adaptive Bandwidth gwr Model
+
+```{r}
+bw_adaptive <- read_rds(
+  "data/model/bw_adaptive.rds")
+```
+
+```{r, eval=FALSE}
+gwr_adaptive <- gwr.basic(
+  formula = resale_price ~ floor_area_sqm +
+    storey_order + remaining_lease_mths + 
+    PROX_CBD + PROX_ELDERLYCARE + 
+    PROX_HAWKER + PROX_MRT + PROX_PARK + 
+    PROX_MALL + PROX_SUPERMARKET +
+    WITHIN_350M_KINDERGARTEN +
+    WITHIN_350M_CHILDCARE + 
+    WITHIN_350M_BUS + WITHIN_1KM_PRISCH,
+  data=train_data,
+  bw=bw_adaptive, 
+  kernel = 'gaussian', 
+  adaptive=TRUE,
+  longlat = FALSE)
+
+write_rds(gwr_adaptive, "data/model/gwr_adaptive.rds")
+```
