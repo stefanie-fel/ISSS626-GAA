@@ -367,19 +367,67 @@ tbl_regression(condo.mlr1,
 
 ### Regression Diagnositics
 
+Regression diagnostics are set of procedures used to check if regression model's assumptions are met and how well it fits the data. It involves checking for issues like non-linear relationships, non-normal errors, non constant variance and influential observations to ensure model's conclusions are valid and reliable. Common methods include graphical analysis (e.g. residual plots, QQ plots and quantitative test). In this section we'll go through R packages specially programmed ofor performing OLS regression diagnostics called olssr. The package provide methods to build better multiple linear regression model, such as:
+
+-   comprehensive regresion output
+
+-   residual diagnostics
+
+-   measure of influence
+
+-   heteroskedasticity test
+
+-   collinearity diagnostics
+
+-   model fit assessment
+
+-   variable contribution assessment
+
+-   varaible selection procedure
+
+#### Multicollinearity Test
+
+Multicollinearity happens when independent varaibels are not truly dependent so the change in the varaibel is associated with a change in another variable. This makes it hard for us to know how much each variable contributes to the model's prediction.
+
+Performing multicollinearity is vital since it ensures the reliability and interpret ability fo model's result. High multicollinearity inflate the varaince fo estimated coefficient, making them unstable, unreliable and difficult to interpret. The instability can lead to misleading statistical conclusions (e.g. variable appearing statistically insignificant when it's not)
+
+We'll use check_collinearity() to check for multicollinearity.
+
 ```{r}
 check_collinearity(condo.mlr1)
 ```
+
+We'll visualize it for better understanding of each parameter's correlation with each other.
 
 ```{r}
 mlr.vif <- check_collinearity(condo.mlr1)
 plot(mlr.vif)
 ```
 
+Since the VIF of each variable is less than 10, we can conclude that there's no sign of multicollinearity
+
+#### Test for Non-linearity
+
+For multiple linear regression, it's important to test for assumption that linearity and additivity (effect of each independent variable is constant and doesn't depends on each other) of relationship between dependent and independent variables. Since this assumption assumes that relationship between predictors and response is linear, then it means resiudals should scatter randomly around y = 0 and smoothed tren fo residuals should be flat and horizontal
+
+In this section, we'll use ols_plot_residual_fit() to perform linearity assumption test.
+
 ```{r}
 check_model(condo.mlr1,
             check = "linearity")
 ```
+
+How to read the graph:
+
+-   x-axis: predicted (fitted) values
+
+-   y-axis: residuals
+
+-   Green line: smootehed trend of residuals
+
+Since most points are scattered around 0, we can conclude that relationship between dependent variable and independent varaibles are linear.
+
+#### Test for Normality Assumption
 
 ```{r}
 check_normality(condo.mlr1)
@@ -533,6 +581,8 @@ condo_resale.sf.adaptive <-
 glimpse(condo_resale.sf.adaptive)
 ```
 
+Visualize Local R2
+
 ```{r}
 tmap_mode("plot")
 tm_shape(mpsz_svy21)+
@@ -543,6 +593,8 @@ tm_shape(condo_resale.sf.adaptive) +
           border.lwd = 1) +
   tm_view(set.zoom.limits = c(11,14))
 ```
+
+Visualize Coefficient Estimates
 
 ```{r}
 tmap_mode("plot")
@@ -565,5 +617,4 @@ tm_shape(condo_resale.sf.adaptive) +
 tmap_arrange(AREA_SQM_SE, AREA_SQM_TV, 
              asp=1, ncol=2,
              sync = TRUE)
-
 ```
