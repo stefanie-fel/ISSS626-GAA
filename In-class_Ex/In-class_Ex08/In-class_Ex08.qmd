@@ -100,6 +100,24 @@ test_data <- testing(resale_split)
 ```
 
 ```{r}
+mdata_nogeo <- mdata %>%
+  st_drop_geometry()
+ggstatsplot::ggcorrmat(mdata_nogeo[, 2:17])
+```
+
+```{r}
+price_mlr <- lm(resale_price ~ floor_area_sqm +
+                  storey_order + remaining_lease_mths +
+                  PROX_CBD + PROX_ELDERLYCARE + PROX_HAWKER +
+                  PROX_MRT + PROX_PARK + PROX_MALL + 
+                  PROX_SUPERMARKET + WITHIN_350M_KINDERGARTEN +
+                  WITHIN_350M_CHILDCARE + WITHIN_350M_BUS +
+                  WITHIN_1KM_PRISCH,
+                data=train_data)
+olsrr::ols_regress(price_mlr)
+```
+
+```{r}
 vif <- performance::check_collinearity(price_mlr)
 kable(vif, 
       caption = "Variance Inflation Factor (VIF) Results") %>%
@@ -126,12 +144,13 @@ bw_adaptive <- bw.gwr(resale_price ~ floor_area_sqm +
                   longlat=FALSE)
 ```
 
-```{r}
-bw_adaptive
+```{r, eval=FALSE}
+write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
 ```
 
 ```{r}
-write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
+bw_adaptive <- read_rds("data/model/bw_adaptive.rds")
+bw_adaptive
 ```
 
 ```{r, eval=FALSE}
@@ -150,12 +169,13 @@ gwr_adaptive <- gwr.basic(formula = resale_price ~
                           longlat = FALSE)
 ```
 
-```{r}
-gwr_adaptive
+```{r, eval=FALSE}
+write_rds(gwr_adaptive, "data/model/gwr_adaptive.rds")
 ```
 
 ```{r}
-write_rds(gwr_adaptive, "data/model/gwr_adaptive.rds")
+gwr_adaptive <- read_rds("data/model/bw_adaptive.rds")
+gwr_adaptive
 ```
 
 ```{r}
@@ -196,6 +216,10 @@ coords_train <- st_coordinates(train_data)
 coords_test <- st_coordinates(test_data)
 ```
 
+```{r}
+train_data_nogeom <- train_data %>%
+  st_drop_geometry()
+```
 
 ```{r}
 set.seed(1234)
@@ -208,7 +232,7 @@ rf <- ranger(resale_price ~ floor_area_sqm + storey_order +
              data=train_data_nogeom)
 ```
 
-```{r}
+```{r, eval=FALSE}
 set.seed(1234)
 gwRF_bw <- grf.bw(formula = resale_price ~ floor_area_sqm + 
                        storey_order + remaining_lease_mths + 
@@ -261,9 +285,3 @@ test_data_pred <- cbind(test_data,
                         GRF_pred_df)
 ```
 
-```{r}
-ggplot(data = test_data,
-  aes(x=GRF_pred,
-      y = resale_price)) + geom_point()
-```
-```

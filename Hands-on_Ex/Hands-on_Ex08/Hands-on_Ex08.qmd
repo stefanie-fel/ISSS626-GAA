@@ -20,12 +20,26 @@ Geospatial predictive modeling is conceptually rooted in the principle that the 
 
 ```{r}
 pacman::p_load(sf, spdep, GWmodel, SpatialML, 
-               tmap, rsample, Metrics, tidyverse, knitr, kableExtra, spaialRF, randomForestExplainer)
+               tmap, rsample, Metrics, tidyverse)
 ```
 
 The libraries used in this exercise are:
 
-\*
+-   sf: simple features in R to encode and analyze spatial vector data
+
+-   spdep: create spatial weights matrix object from polygon 'contiguities'
+
+-   tmap: used to draw thematic map
+
+-   tidyverse: collection of R packages that for data manipulation and visualization
+
+-   GWmodel: techniques form particulae branch of spatial statistics termed geographically weighted (GW model)
+
+-   SpatialML: implement spatial extension of random forest algorithm
+
+-   rsample: classes adn functions to create and summarize different type sof resampling objects (e.g. bootstrap, cross-validation)
+
+-   Metrics: evaluation metrics in R for supervised ML
 
 ## The Data
 
@@ -65,13 +79,15 @@ The data we'll be using in this hands on exercise are:
 
     -   Good primary schools: list of primary schools ordered by popularity ranking (from local Salary Forum)
 
-Data Preparation
+## Data Preparation
 
 ```{r}
 mdata <- read_rds("data/rawdata/mdata.rds")
 ```
 
-Data Sampling Next, we'll split the dataset 65% and 35% by using initial_split()
+### Data Sampling
+
+Next, we'll split the dataset 65% and 35% for training and testing using initial_split()
 
 ```{r}
 set.seed(1234)
@@ -81,12 +97,16 @@ train_data <- training(resale_split)
 test_data <- testing(resale_split)
 ```
 
+The output will be saved into rds file.
+
 ```{r}
 write_rds(train_data, "data/model/train_data.rds")
 write_rds(test_data, "data/model/test_data.rds")
 ```
 
-Derive Correlation Matrix
+### Derive Correlation Matrix
+
+Before we create the model, its good practice to use correlation matrix to examine signs of multicollinearity.
 
 ```{r}
 mdata_nogeo <- mdata %>%
@@ -100,10 +120,17 @@ corrplot::corrplot(cor(mdata_nogeo[, 2:17]),
                    type = "upper")
 ```
 
+As can be seen, all of the values are less than 0.8, which means that the variables are not strongly correlated.
+
+### Retrieve Stored Data
+
 ```{r}
 train_data <- read_rds("data/model/train_data.rds")
 test_data <- read_rds("data/model/test_data.rds")
+names(train_data)
 ```
+
+## Build Non-Spatial Multiple Linear Regression
 
 ```{r, eval=FALSE}
 price_mlr <- lm(resale_price ~ floor_area_sqm +
@@ -117,9 +144,21 @@ price_mlr <- lm(resale_price ~ floor_area_sqm +
 summary(price_mlr)
 ```
 
-gwr Predictive Model
+As can be seen, the model performs well achieving the score of 0.737 on adjusted R-square and is significant (p-value less thna 0.05). Apart from that, all of the variables used for prediction are contributing to teh model.
 
-Compute Adaptive Bandwidth
+We'll save the results in rds file.
+
+```{r, eval=FALSE}
+write_rds(price_mlr, "data/model/price_mlr.rds" ) 
+```
+
+## gwr Predictive Model
+
+In this section, we'll learn hwo to calibrate model to predict HDB resale price using geographically weighted regression.
+
+### Compute Adaptive Bandwidth
+
+First, we;ll use bw.gwr() to determine optimal bandwidth to be used. We'll be using CV method to determine optimal bandwidth
 
 ```{r, eval=FALSE}
 bw_adaptive <- bw.gwr(
@@ -139,12 +178,18 @@ bw_adaptive <- bw.gwr(
 write_rds(bw_adaptive, "data/model/bw_adaptive.rds")
 ```
 
-Construct Adaptive Bandwidth gwr Model
+The output shows that 40 neighbour points will be the optimal bandwidth to be used if adaptive bandwidth is used for the data set.
+
+### Construct Adaptive Bandwidth gwr Model
+
+We'll reload the bandwidth like below
 
 ```{r}
 bw_adaptive <- read_rds(
   "data/model/bw_adaptive.rds")
 ```
+
+Now we'll calibrate the gwr-based hedonic pricing model using adaptive bandwidth and Gaussian kernel
 
 ```{r, eval=FALSE}
 gwr_adaptive <- gwr.basic(
@@ -165,13 +210,21 @@ gwr_adaptive <- gwr.basic(
 write_rds(gwr_adaptive, "data/model/gwr_adaptive.rds")
 ```
 
+### Retrieve gwr Output Object
+
+We'll load the saved gwr model
+
 ```{r}
-gwr_adaptive <- read_rds("chap14/data/model/gwr_adaptive.rds")
+gwr_adaptive <- read_rds("data/model/gwr_adaptive.rds")
 ```
 
 ```{r}
 gwr_adaptive
 ```
+
+gwr_adaptive performed better than the non-spatial multiple regression model as its adjusted r square is at 0.96, which means that the model can explain 96% of the resale price. The AICC fits better with the gwr_adaptive.
+
+### Compute Adaptive Bandwidth for Test Dara
 
 ```{r}
 gwr_bw_test_adaptive <- bw.gwr(
@@ -192,7 +245,23 @@ write_rds(gwr_bw_test_adaptive,
           "data/model/gwr_bw_test_adaptive.rds")
 ```
 
+### Compute Predicted Values of Test Data
+
 ```{r}
+coords <- st_coordinates(train_data)  # extract longitude & latitude (or x/y)
+train_data$x <- coords[, 1]
+train_data$y <- coords[, 2]
+names(train_data)
+```
+
+```{r}
+coords_test <- st_coordinates(test_data)  # extract longitude & latitude (or x/y)
+test_data$x <- coords_test[, 1]
+test_data$y <- coords_test[, 2]
+names(train_data)
+```
+
+```{r, eval=FALSE}
 gwr_pred <- gwr.predict(
   formula = resale_price ~ floor_area_sqm + 
     storey_order + remaining_lease_mths + 
@@ -212,4 +281,154 @@ write_rds(gwr_pred,
           "data/model/gwr_pred.rds")
 ```
 
-\`\`\`
+## Calibrate Random Forest Model
+
+### Prepare Coordinate Data
+
+Before we create the random forest model, we'll extract the x and y coordinate for train data and test data
+
+```{r}
+coords <- st_coordinates(mdata)
+coords_train <- st_coordinates(train_data)
+coords_test <- st_coordinates(test_data)
+```
+
+We'll save the output in rds file.
+
+```{r}
+coords_train <- write_rds(
+  coords_train, 
+  "data/model/coords_train.rds" )
+coords_test <- write_rds(
+  coords_test, 
+  "data/model/coords_test.rds" )
+```
+
+### Drop Geometry Field
+
+Next, we'll drop geometry field using st_drop_geometry()
+
+```{r}
+train_data_nogeom <- train_data %>% 
+  st_drop_geometry()
+
+test_data_nogeom <- test_data %>% 
+  st_drop_geometry()
+```
+
+### Calibrate a Non-spatial Random Forest Model
+
+```{r}
+set.seed(1234)
+rf <- ranger(
+  formula = resale_price ~ floor_area_sqm +
+    storey_order + remaining_lease_mths + 
+    PROX_CBD + PROX_ELDERLYCARE + 
+    PROX_HAWKER + PROX_MRT + PROX_PARK + 
+    PROX_MALL + PROX_SUPERMARKET +
+    WITHIN_350M_KINDERGARTEN + 
+    WITHIN_350M_CHILDCARE + 
+    WITHIN_350M_BUS +  
+    WITHIN_1KM_PRISCH,
+  data=train_data_nogeom)
+rf
+```
+
+Next, we'll save output into rds file.
+
+```{r}
+write_rds(rf, "data/model/rf.rds")
+```
+
+### Calibrate Geographical Weighted Random Forest Model
+
+In this section, we'll create weighted random forest model using grf()
+
+#### Create Model Using Training Data
+
+```{r}
+set.seed(1234)
+gwRF_adaptive <- grf(
+  formula = resale_price ~ floor_area_sqm +
+    storey_order + remaining_lease_mths + 
+    PROX_CBD + PROX_ELDERLYCARE + 
+    PROX_HAWKER + PROX_MRT + PROX_PARK + 
+    PROX_MALL + PROX_SUPERMARKET +
+    WITHIN_350M_KINDERGARTEN +
+    WITHIN_350M_CHILDCARE + 
+    WITHIN_350M_BUS + WITHIN_1KM_PRISCH,
+  dframe=train_data_nogeom, 
+  bw=40,
+  kernel="adaptive",
+  coords=coords_train)
+
+write_rds(gwRF_adaptive, "data/model/gwRF_adaptive.rds")
+```
+
+```{r}
+gwRF_adaptive <- read_rds("data/model/gwRF_adaptive.rds")
+```
+
+#### Predict Using Test Data
+
+Well prepare tthe test data by combining the data with its coordinates
+
+```{r}
+test_data_nogeom <- cbind(
+  test_data, coords_test) %>%
+  st_drop_geometry()
+```
+
+We'll use predict.grf() to predict resale value by using tets data and gwRF_adaptive model.
+
+```{r}
+gwRF_pred <- predict.grf(gwRF_adaptive, 
+                           test_data_nogeom, 
+                           x.var.name="X",
+                           y.var.name="Y", 
+                           local.w=1,
+                           global.w=0)
+
+GRF_pred <- write_rds(gwRF_pred, "data/model/GRF_pred.rds")
+```
+
+#### Convert Predicting Output to Dataframe
+
+Since the output of predict.grf() is in vector form, we'll convert it to dataframe for easy visualization and analysis.
+
+```{r}
+GRF_pred <- read_rds(
+  "data/model/GRF_pred.rds")
+GRF_pred_df <- as.data.frame(GRF_pred)
+```
+
+We use cbind() to append the predicted valyes to test_data_p
+
+```{r}
+test_data_p <- cbind(
+  test_data, GRF_pred_df) %>%
+  select(resale_price, GRF_pred)
+```
+
+```{r}
+write_rds(test_data_p, 
+          "data/model/test_data_p.rds")
+```
+
+### Calculate Root Mean Square Error
+
+Next, we'll evaluate the performance of the model using root mean square error. This works by meausring how far predicted values are from observed values in regression analysis.
+
+```{r}
+rmse(test_data_p$resale_price, 
+     test_data_p$GRF_pred)
+```
+
+Next, we'll visualize the predicted value.
+
+```{r}
+ggplot(data = test_data_p,
+       aes(x = GRF_pred,
+           y = resale_price)) +
+  geom_point()
+```
