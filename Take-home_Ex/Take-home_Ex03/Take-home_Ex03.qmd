@@ -60,7 +60,7 @@ Libraries used for this exercise are:
 
 -   spatialRF
 
-## Geocode HDB 
+## Geocode HDB
 
 Resale Data First, we'll import the HDB resale prices data using read_csv() and filter for 4 rooms HDB data from September to October 2025.
 
@@ -98,7 +98,7 @@ geocode <- function(block, streetname) {
   } 
 ```
 
-::: {.callout-note}
+::: callout-note
 -   `"searchVal" = address`: pass the address as searchVal in the query
 
 -   `"returnGeom" = "Y"`: send the query to OneMapSG search and return the geometry

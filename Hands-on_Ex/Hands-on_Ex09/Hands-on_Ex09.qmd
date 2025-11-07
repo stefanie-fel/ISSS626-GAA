@@ -76,7 +76,7 @@ hexagons <- st_read(dsn = "data/geospatial", layer = "hexagons")
 eldercare <- st_read(dsn = "data/geospatial", layer = "ELDERCARE") 
 ```
 
-## Data Preparation 
+## Data Preparation
 
 Next, we'll update the imported sf files into 3414 ESPG code.
 
