@@ -1,0 +1,158 @@
+---
+title: "In-class_Ex09"
+format: html
+---
+
+```{r}
+pacman::p_load(SpatialAcc, sf, tidyverse, 
+               tmap, ggstatsplot)
+```
+
+## Count Number of Points within a Distance
+
+In this section, we'll count the number of point features of CHAS clinic within 1 km of another point feature (eldercare centre)
+
+```{r}
+eldercare <- st_read(dsn = "data/geospatial",
+                     layer = "ELDERCARE") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+CHAS <- st_read("data/geospatial/CHASClinics.kml") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+buffer_1km <- st_buffer(eldercare, 
+                        dist = 1000)
+```
+
+```{r}
+tmap_mode("view")
+tm_shape(buffer_1km) +
+  tm_polygons() +
+tm_shape(CHAS) +
+  tm_dots()
+```
+
+```{r}
+buffer_1km$pts_count <- lengths(
+  st_intersects(buffer_1km, CHAS))
+```
+
+## Import Data
+
+```{r}
+mpsz <- st_read(dsn = "data/geospatial",
+                layer = "MP14_SUBZONE_NO_SEA_PL") %>%
+  st_transform(crs = 3414)
+
+hexagons <- st_read(dsn = "data/geospatial", layer = "hexagons") %>%
+  st_transform(crs = 3414)
+
+eldercare <- st_read(dsn = "data/geospatial",
+                     layer = "ELDERCARE") %>%
+  st_transform(csr = 3414)
+```
+
+```{r}
+ODMatrix <- read_csv("data/aspatial/OD_Matrix.csv", 
+                     skip = 0)
+```
+
+## Data Cleaning and Update Attribute
+
+```{r}
+eldercare <- eldercare %>%
+  select(fid, ADDRESSPOS) %>%
+  mutate(capacity = 100)
+```
+
+```{r}
+hexagons <- hexagons %>%
+  select(fid) %>%
+  mutate(demand = 100)
+```
+
+```{r}
+distmat <- ODMatrix %>%
+  select(origin_id, destination_id, total_cost) %>%
+  spread(destination_id, total_cost)%>%
+  select(c(-c('origin_id')))
+```
+
+```{r}
+distmat_km <- as.matrix(distmat/1000)
+distmat_km
+```
+
+## Compute Handsen's Accessibility
+
+```{r}
+acc_Hansen <- data.frame(ac(hexagons$demand,
+                            eldercare$capacity,
+                            distmat_km, 
+                            #d0 = 50,
+                            power = 2, 
+                            family = "Hansen"))
+```
+
+## Visualize Accessibility
+
+```{r}
+colnames(acc_Hansen) <- "accHansen"
+
+acc_Hansen <- as_tibble(acc_Hansen)
+
+hexagon_Hansen <- bind_cols(hexagons, acc_Hansen)
+```
+
+```{r}
+mapex <- st_bbox(hexagons)
+
+tmap_mode("plot")
+tm_shape(hexagon_Hansen, bbox = st_bbox(hexagons)) +
+  tm_polygons(
+    fill = "accHansen",
+    fill.scale = tm_scale_intervals(style = "quantile", n = 10),
+    fill.legend = tm_legend(title = "Accessibility (Hansen)"),
+    border.col = "black"
+  ) +
+tm_shape(eldercare) +
+  tm_symbols(size = 0.1) +
+  tm_compass(type = "8star", size = 2) +
+  tm_grid(lwd = 0.1, alpha = 0.5) +
+  tm_title("Accessibility to eldercare: Hansen method",
+           position = c("center", "top"),
+           size = 1.2) +
+  tm_legend(position = c("right", "top")) +
+  tm_scalebar() +   # <— move to the very end
+  tm_layout(frame = TRUE)
+
+```
+
+::: {.callout-note}
+-   Most of Singapore are not accessible for eldercare, they need to travel far to be able to get to the nearest eldercare. There are only a few points in other areas and in central area, which indicate that there are more eldercare centre at those areas.
+
+-   Another interpretation could be that there are small facilities eldercares centre nearby, so there are limited spots, so that there isn't many elderly that can take that much elderly.
+:::
+
+## Statistical Graph
+
+```{r}
+hexagon_Hansen <- st_join(hexagon_Hansen, mpsz, 
+                          join = st_intersects)
+```
+
+```{r}
+ggbetweenstats(
+  data = hexagon_Hansen,
+  x = REGION_N,
+  y = accHansen,
+  type = "p")
+```
+
+::: {.callout-note}
+-   As seen in the observation before, the central region has the highest number of eldercare centre, with north region having the least eldercare centre.
+:::

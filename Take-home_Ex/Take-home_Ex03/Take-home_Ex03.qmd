@@ -23,6 +23,7 @@ The focus of this hands on exercise will be on four room HDB properties with .. 
 In this hands, on we'll be using the following datasets:
 
 -   HDB Resale Flat Prices (from Jan-2017 onwards) taken from data.gov.sg
+-   
 
 ## Import Libraries
 
@@ -66,7 +67,7 @@ Resale Data First, we'll import the HDB resale prices data using read_csv() and 
 
 ```{r}
 HDBresale <- read_csv("data/resale_price_from_jan2014.csv") %>%
-  filter(flat_type == "4 ROOM") %>%
+  filter(flat_type == "3 ROOM") %>%
   filter(month >= "2025-09" & month <= "2025-10")
 ```
 
@@ -154,4 +155,8 @@ within_350m <- st_is_within_distance(
 
 HDBresale_sf <- HDBresale_sf %>%
   mutate(preschool_350m = map_int(within_350m, length))
+```
+
+```{r}
+
 ```
