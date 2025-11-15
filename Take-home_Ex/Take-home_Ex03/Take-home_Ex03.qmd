@@ -28,7 +28,7 @@ In this hands, on we'll be using the following datasets:
 ## Import Libraries
 
 ```{r}
-pacman::p_load(httr, tidyverse, sf, tmap, jsonlite, progress, spdep, GWmodel, SpatialML, rsample, Metrics, knitr, kableExtra, spatialRF, randomForestExplainer)
+pacman::p_load(olsrr, corrplot, httr, tidyverse, sf, tmap, jsonlite, progress, spdep, GWmodel, SpatialML, rsample, Metrics, knitr, kableExtra, spatialRF, randomForestExplainer, ggpubr, fastDummies, performance, car, readxl)
 ```
 
 Libraries used for this exercise are:
@@ -63,12 +63,12 @@ Libraries used for this exercise are:
 
 ## Geocode HDB
 
-Resale Data First, we'll import the HDB resale prices data using read_csv() and filter for 4 rooms HDB data from September to October 2025.
+Resale Data First, we'll import the HDB resale prices data using read_csv() and filter for 4 rooms HDB data from January to September 2025.
 
 ```{r}
 HDBresale <- read_csv("data/resale_price_from_jan2014.csv") %>%
-  filter(flat_type == "3 ROOM") %>%
-  filter(month >= "2025-09" & month <= "2025-10")
+  filter(flat_type == "4 ROOM") %>%
+  filter(month >= "2025-01" & month <= "2025-09")
 ```
 
 Next, we'll also rename street names that has "ST." into "SAINT"
@@ -138,6 +138,95 @@ HDBresale_sf <- HDBresale %>%
   st_transform(crs=3414)
 ```
 
+### Import CBD Data
+
+```{r}
+map <- read_rds("data/mpsz_cl.rds")
+st_crs(map)
+```
+
+```{r}
+cbd_points <- map %>%
+  filter(REGION_N == "CENTRAL REGION")
+```
+
+```{r}
+st_is_valid(cbd_points)
+```
+
+```{r}
+st_crs(HDBresale_sf)
+st_crs(cbd_points)
+```
+
+```{r}
+cbd_dist <- st_distance(HDBresale_sf, cbd_points)
+
+HDBresale_sf$cbd_distance <- apply(cbd_dist, 1, min) %>% as.numeric()
+sum(HDBresale_sf$cbd_distance < 0) 
+```
+
+```{r}
+tm_shape(map) + tm_polygons(col = "lightgrey", border.col = "white") + tm_shape(HDBresale_sf) + tm_dots(ol="red", size = 0.1)
+```
+
+### Import Hawker Center Data
+
+```{r}
+hawker <- st_read("data/HawkerCentresKML.kml") %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+hawker_dist <- st_distance(HDBresale_sf, hawker)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(nearest_hawker = apply(hawker_dist, 1, min))
+```
+
+### Import Eldercare Data
+
+```{r}
+eldercare <- st_read("data/EldercareServicesKML.kml") %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+eldercare_dist <- st_distance(HDBresale_sf, eldercare)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(nearest_eldercare = apply(eldercare_dist, 1, min))
+```
+
+### Import Supermarket Data
+
+```{r}
+supermarket <- st_read("data/SupermarketsKML.kml") %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+supermarket_dist <- st_distance(HDBresale_sf, supermarket)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(nearest_supermarket = apply(supermarket_dist, 1, min))
+```
+
+### Import Kindergaten Data
+
+```{r}
+kindergarten <- st_read("data/Kindergartens.kml") %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+kindergarten_within_350m <- st_is_within_distance(
+  HDBresale_sf, kindergarten, dist = 350)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(kindergarten_350m = map_int(kindergarten_within_350m, length))
+```
+
 ### Import Preschool Location Data
 
 Next, we'll import the preschool dataset using st_read() and transform the projected coordinate system into 3414.
@@ -157,6 +246,217 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(preschool_350m = map_int(within_350m, length))
 ```
 
+Import Bus Stop Location
+
 ```{r}
+bus_stop <- st_read(dsn = "data/LTADataMall/", 
+                  layer = "BusStop") %>%
+  st_transform(crs = 3414)
+```
+
+```{r}
+bus_within_350m <- st_is_within_distance(
+  HDBresale_sf, bus_stop, dist = 350)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(bus_350m = map_int(bus_within_350m, length))
+```
+
+```{r}
+HDBresale_sf$remaining_lease <- as.integer(substr(HDBresale_sf$remaining_lease, 1, 2))
+```
+
+```{r}
+mrt <- read_excel("data/MRT Stations.xls")
+```
+
+```{r}
+class(mrt$geometry)
+```
+
+## EDA
+
+```{r}
+ggplot(data=HDBresale_sf, 
+       aes(x=`resale_price`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+```
+
+```{r}
+PROX_ELDERLYCARE <- ggplot(data=HDBresale_sf, 
+                           aes(x= `nearest_eldercare`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+PROX_CBD <- ggplot(data=HDBresale_sf, 
+                               aes(x= `cbd_distance`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+PROX_HAWKER_MARKET <- ggplot(data=HDBresale_sf, 
+                             aes(x= `nearest_hawker`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+PROX_KINDERGARTEN <- ggplot(data=HDBresale_sf, 
+                            aes(x= `kindergarten_350m`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+PROX_PRESCHOOL <- ggplot(data=HDBresale_sf, 
+                            aes(x= `preschool_350m`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+PROX_SUPERMARKET <- ggplot(data=HDBresale_sf, 
+                            aes(x= `nearest_supermarket`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+
+PROX_REMAINING_LEASE <- ggplot(data=HDBresale_sf, 
+                   aes(x= `remaining_lease`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+PROX_BUS <- ggplot(data=HDBresale_sf, 
+                   aes(x= `bus_350m`)) +
+  geom_histogram(bins=20, 
+                 color="black", 
+                 fill="light blue")
+
+ggarrange(PROX_ELDERLYCARE, PROX_CBD, PROX_HAWKER_MARKET, PROX_KINDERGARTEN, PROX_PRESCHOOL, PROX_SUPERMARKET, PROX_REMAINING_LEASE, PROX_BUS, ncol = 5, nrow = 2)
+```
+
+Categorical Variable
+
+```{r}
+unique(HDBresale_sf$flat_model)
+```
+
+Storey Range Variable
+
+```{r}
+colnames(HDBresale_sf)
+```
+
+```{r}
+nrow(HDBresale_sf)
+HDBresale_sf$storey_range <- factor(HDBresale_sf$storey_range,
+                         levels = c("01 TO 03", "04 TO 06", "07 TO 09", "10 TO 12",
+                                    "13 TO 15", "16 TO 18", "19 TO 21", "22 TO 24",
+                                    "25 TO 27", "28 TO 30", "31 TO 33", "34 TO 36",
+                                    "37 TO 39", "40 TO 42", "43 TO 45", "46 TO 48",
+                                    "49 TO 51"),
+                         ordered = TRUE)
+class(HDBresale_sf$storey_range)
+```
+
+```{r}
+# drop geometry column
+HDB_numeric <- st_drop_geometry(HDBresale_sf)
+colnames(HDB_numeric)
+```
+
+```{r}
+HDB_numeric <- st_drop_geometry(HDB_numeric)
+sapply(HDB_numeric[c(6, 10:18)], class)
+```
+
+```{r}
+corrplot(cor(HDB_numeric[,c(10:18)]),
+         diag = FALSE, 
+         order = "AOE",
+         tl.pos = "td", 
+         tl.cex = 0.5, 
+         method = "number", 
+         type = "upper")
+```
+
+Multiple Linear Regression Model
+
+```{r}
+resale_price.mlr <- lm(
+  formula = resale_price ~ floor_area_sqm + remaining_lease + cbd_distance  + 
+    nearest_hawker + nearest_eldercare +
+    kindergarten_350m   +
+    bus_350m, 
+  data=HDBresale_sf)
+summary(resale_price.mlr)
 
 ```
+
+## Satisfying Requirements for Multiple Linear Regression
+
+```{r}
+check_collinearity(resale_price.mlr)
+```
+
+```{r}
+vif_model <- check_collinearity(resale_price.mlr)
+plot(vif_model)
+```
+
+```{r}
+check_model(resale_price.mlr,
+            check = "linearity")
+```
+
+```{r}
+crPlot(resale_price.mlr, variable = "cbd_distance")
+crPlot(resale_price.mlr, variable = "floor_area_sqm")
+crPlot(resale_price.mlr, variable = "remaining_lease")
+crPlot(resale_price.mlr, variable = "nearest_hawker")
+crPlot(resale_price.mlr, variable = "kindergarten_350m")
+crPlot(resale_price.mlr, variable = "nearest_eldercare")
+crPlot(resale_price.mlr, variable = "bus_350m")
+```
+
+```{r}
+sum(HDBresale_sf$floor_area_sqm < 0)      # usually none
+sum(HDBresale_sf$remaining_lease < 0)     # should be >=0
+sum(HDBresale_sf$cbd_distance <= 0)       # log(0) or negative → problem
+sum(HDBresale_sf$nearest_hawker <= 0)     # log(0) → problem
+sum(HDBresale_sf$kindergarten_350m < 0) 
+```
+
+```{r}
+resale_price.mlr <- lm(
+  formula = resale_price ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+    log(nearest_hawker) + nearest_eldercare +
+    sqrt(kindergarten_350m)   +
+    bus_350m, 
+  data=HDBresale_sf)
+summary(resale_price.mlr)
+```
+
+```{r}
+resale_price.mlr2 <- lm(
+  formula = resale_price ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+    log(nearest_hawker) + nearest_eldercare   +
+    bus_350m, 
+  data=HDBresale_sf)
+summary(resale_price.mlr2)
+```
+
+```{r}
+check_model(resale_price.mlr2,
+            check = "linearity")
+```
+
+### Multricollinearity Check
+
+## Multiple Linear Regression Model
+
+Evaluation
+
+## 
