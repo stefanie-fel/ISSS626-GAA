@@ -14,7 +14,7 @@ execute:
 
 ## Objective
 
-In this hands-on exercise, we'll be creating a geospatial predictive model to predict HDB resale price from July to September 2024 using data from the whole year data (from July 2024 to June 2025).
+-   In this hands-on exercise, we'll be creating a geospatial predictive model to predict HDB resale price from July to September 2024 using data from the whole year data (from July 2024 to June 2025).
 
 The focus of this hands on exercise will be on four room HDB properties with .. as predictors.
 
@@ -267,11 +267,24 @@ HDBresale_sf$remaining_lease <- as.integer(substr(HDBresale_sf$remaining_lease, 
 ```
 
 ```{r}
-mrt <- read_excel("data/MRT Stations.xls")
+mrt <- read_csv("data/MRT Stations.csv")
 ```
 
 ```{r}
-class(mrt$geometry)
+mrt_sf <- st_as_sf(mrt,
+                   wkt = "geometry",  
+                   crs = 4326)
+```
+
+```{r}
+mrt_sf <- st_transform(mrt_sf, 3414)
+```
+
+```{r}
+mrt_dist <- st_distance(HDBresale_sf, mrt_sf)
+
+HDBresale_sf <- HDBresale_sf %>%
+  mutate(nearest_mrt = apply(mrt_dist, 1, min))
 ```
 
 ## EDA
