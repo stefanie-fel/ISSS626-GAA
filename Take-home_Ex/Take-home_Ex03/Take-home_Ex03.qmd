@@ -14,52 +14,59 @@ execute:
 
 ## Objective
 
--   In this hands-on exercise, we'll be creating a geospatial predictive model to predict HDB resale price from July to September 2024 using data from the whole year data (from July 2024 to June 2025).
-
-The focus of this hands on exercise will be on four room HDB properties with .. as predictors.
+-   In this hands-on exercise, we'll be creating a geospatial explanatory model to predict HDB resale price from July to September 2024 using data from the whole year data (from July 2024 to June 2025). The focus of this take-home exercise analysis will be on four room HDB properties instead of all types fo HDB property.
 
 ## The Data
 
 In this hands, on we'll be using the following datasets:
 
 -   HDB Resale Flat Prices (from Jan-2017 onwards) taken from data.gov.sg
--   
+-   Supermarket location data taken from <a href="https://data.gov.sg/datasets/d_8a77ee0446716b2ce475a587004afc73/view">data.gov.sg</a>
+-   Bus stop location data taken from LTA Datamall
+-   Preschool location data taken from <a href="https://data.gov.sg/datasets/d_a72bcd23e208d995f3bd4eececeaca43/view">data.gov.sg</a>
+-   Kindergaten location data taken from <a href="https://data.gov.sg/datasets/d_95aa63998d7de94dd4cb3e8e43a5f6d5/view">data.gov.sg</a>
+-   Hakwer centre location data taken from <a href="https://data.gov.sg/datasets/d_ccca3606c337a5c386b9c88dc0dd08b6/view">data.gov.sg</a>
+-   Eldercare service location data taken from <a href="https://data.gov.sg/datasets/d_1ee66bb5a41e00b5baadfe00224f649b/view">data.gov.sg</a>
+-   Cleaned Master Plan 2019 Subzone (No Sea) dataset from Hands-on 2.
+-   MRT station location data taken from <a href="https://www.kaggle.com/datasets/shengjunlim/singapore-mrt-lrt-stations-with-coordinates">Kaggle</a>. The original data is in xls format, but I tidied the data and changed the file format to csv as I could not open the xls file.
 
 ## Import Libraries
 
 ```{r}
-pacman::p_load(olsrr, corrplot, httr, tidyverse, sf, tmap, jsonlite, progress, spdep, GWmodel, SpatialML, rsample, Metrics, knitr, kableExtra, spatialRF, randomForestExplainer, ggpubr, fastDummies, performance, car, readxl)
+pacman::p_load(olsrr, corrplot, httr, tidyverse, sf, tmap, jsonlite, progress, sfdep, GWmodel, Metrics, knitr, kableExtra, spatialRF, ggpubr, performance, car, rRColorBrewer, spdep, spatialreg)
 ```
 
 Libraries used for this exercise are:
 
--   httr
+-   olsrr: build ordinary least squares regression model
 
--   tidyverse
+-   httr: work with URL and HTTP
 
--   sf
+-   tidyverse: designed to amke it easy to isntall and load multiple tidyverse packages
 
--   tmap
+-   sf: standardized way to encode and analyze spatial vector data
 
--   jsonlite
+-   tmap: draw thematic map
 
--   progress
+-   jsonlite: json parser and generator
 
--   spdep
+-   progress: configurable progress bar
 
--   GWmodel
+-   sfdep: spatial depednence for sf
 
--   SpatialModel
+-   GWmodel: techniques form a particular branch of spatial statistical
 
--   rsample
+-   SpatialModel: fit and summarize spatial model
 
--   Metrics
+-   Metrics: implement metric for regression, time series, binary classification and classification
 
--   knitr
+-   ggpubr: provide easy to use function to customize ggplot2
 
--   kableExtra
+-   performance: utilities for computing measures to assess model quality
 
--   spatialRF
+-   car: provide function and tool for regression analysis
+
+-   rRColorBrewer: manage colors
 
 ## Geocode HDB
 
@@ -140,42 +147,50 @@ HDBresale_sf <- HDBresale %>%
 
 ### Import CBD Data
 
+Next, we'll import all dataset used for the analysis. First, we'll import the cleaned Master Plan 2019 Subzone (No Sea) dataset from Hands-on 2 exercise for to extract the CBD locations. We'll import the data using read_rds.
+
 ```{r}
 map <- read_rds("data/mpsz_cl.rds")
 st_crs(map)
 ```
+
+We'll filter for records that's in central region to get the CBD locations.
 
 ```{r}
 cbd_points <- map %>%
   filter(REGION_N == "CENTRAL REGION")
 ```
 
+We'll check if all of the points are valid using st_is_valid()
+
 ```{r}
 st_is_valid(cbd_points)
 ```
 
-```{r}
-st_crs(HDBresale_sf)
-st_crs(cbd_points)
-```
+Next, we'll compute the distance between each HDB property to CBD and add a new column into the HDBresale_sf.
 
 ```{r}
 cbd_dist <- st_distance(HDBresale_sf, cbd_points)
 
 HDBresale_sf$cbd_distance <- apply(cbd_dist, 1, min) %>% as.numeric()
+```
+
+We'll also check if all the distance are valid, all distance should not be less than 0.
+
+```{r}
 sum(HDBresale_sf$cbd_distance < 0) 
 ```
 
-```{r}
-tm_shape(map) + tm_polygons(col = "lightgrey", border.col = "white") + tm_shape(HDBresale_sf) + tm_dots(ol="red", size = 0.1)
-```
-
 ### Import Hawker Center Data
+
+Next, we'll import the hawker center location data using st_read and transform the projection system coordinate into 3414.
 
 ```{r}
 hawker <- st_read("data/HawkerCentresKML.kml") %>%
   st_transform(crs=3414)
 ```
+
+Like the previous dataset, we'll compute the distance from each HDB unit to nearest hawker centre using st_distance and add it as a column into the HDBresale_sf.
 
 ```{r}
 hawker_dist <- st_distance(HDBresale_sf, hawker)
@@ -186,10 +201,14 @@ HDBresale_sf <- HDBresale_sf %>%
 
 ### Import Eldercare Data
 
+Like before, we'll import the eldercare data using st_reada and transform the data to 3414 coordinate reference system.
+
 ```{r}
 eldercare <- st_read("data/EldercareServicesKML.kml") %>%
   st_transform(crs=3414)
 ```
+
+Next, we'll compute the distance of each HDB property to the nearest eldercare service and add the column into the HDBresale_sf.
 
 ```{r}
 eldercare_dist <- st_distance(HDBresale_sf, eldercare)
@@ -200,10 +219,14 @@ HDBresale_sf <- HDBresale_sf %>%
 
 ### Import Supermarket Data
 
+Like before, we'll import the supermarket location data using st_read and transform the data to 3414 coordinate reference system.
+
 ```{r}
 supermarket <- st_read("data/SupermarketsKML.kml") %>%
   st_transform(crs=3414)
 ```
+
+Next, we'll compute the distance of each HDB property to the nearest supermarket and add the column into the HDBresale_sf.
 
 ```{r}
 supermarket_dist <- st_distance(HDBresale_sf, supermarket)
@@ -214,10 +237,14 @@ HDBresale_sf <- HDBresale_sf %>%
 
 ### Import Kindergaten Data
 
+In this section, we'll calculate how many kindergarten within 350 meters of each HDB property. We'll import the data using st_read() and transform the crs to 3414.
+
 ```{r}
 kindergarten <- st_read("data/Kindergartens.kml") %>%
   st_transform(crs=3414)
 ```
+
+Next, we'll calculate the number of kindergarten within 350 meters and add the results as a new column in HDBresale_sf.
 
 ```{r}
 kindergarten_within_350m <- st_is_within_distance(
@@ -229,7 +256,7 @@ HDBresale_sf <- HDBresale_sf %>%
 
 ### Import Preschool Location Data
 
-Next, we'll import the preschool dataset using st_read() and transform the projected coordinate system into 3414.
+in this section, we'll import the preschool dataset using st_read() and transform the projected coordinate system into 3414.
 
 ```{r}
 preschool <- st_read("data/PreSchoolsLocation(1).kml") %>%
@@ -246,7 +273,9 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(preschool_350m = map_int(within_350m, length))
 ```
 
-Import Bus Stop Location
+### Import Bus Stop Location
+
+Next, we want to calculate the number of bus stop within 350 meters of each HDB property.
 
 ```{r}
 bus_stop <- st_read(dsn = "data/LTADataMall/", 
@@ -262,13 +291,15 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(bus_350m = map_int(bus_within_350m, length))
 ```
 
-```{r}
-HDBresale_sf$remaining_lease <- as.integer(substr(HDBresale_sf$remaining_lease, 1, 2))
-```
+### Import MRT Location
+
+Next, we'll calculate the distance of nearest MRT station from HDB property. We'll first import the data using read_csv().
 
 ```{r}
 mrt <- read_csv("data/MRT Stations.csv")
 ```
+
+We'll transform the tbl data frame into sf dataframe.
 
 ```{r}
 mrt_sf <- st_as_sf(mrt,
@@ -276,9 +307,13 @@ mrt_sf <- st_as_sf(mrt,
                    crs = 4326)
 ```
 
+Next, we'll transform the sf dataframe from 4326 to 3414 coordinate reference system.
+
 ```{r}
 mrt_sf <- st_transform(mrt_sf, 3414)
 ```
+
+Next, we'll compute for the distance between each HDB property to the nearest MRT station
 
 ```{r}
 mrt_dist <- st_distance(HDBresale_sf, mrt_sf)
@@ -287,7 +322,30 @@ HDBresale_sf <- HDBresale_sf %>%
   mutate(nearest_mrt = apply(mrt_dist, 1, min))
 ```
 
+### Data Preparation for Existing Variables
+
+Next, we'll also extract only the years as the remaining_lease variable instead of containing both the year and month.
+
+```{r}
+HDBresale_sf$remaining_lease <- as.integer(substr(HDBresale_sf$remaining_lease, 1, 2))
+```
+
+We'll make turn storey_range column into nominal categorical variable instead of character variable.
+
+```{r}
+HDBresale_sf$storey_range <- factor(HDBresale_sf$storey_range,
+                         levels = c("01 TO 03", "04 TO 06", "07 TO 09", "10 TO 12",
+                                    "13 TO 15", "16 TO 18", "19 TO 21", "22 TO 24",
+                                    "25 TO 27", "28 TO 30", "31 TO 33", "34 TO 36",
+                                    "37 TO 39", "40 TO 42", "43 TO 45", "46 TO 48",
+                                    "49 TO 51"),
+                         ordered = TRUE)
+class(HDBresale_sf$storey_range)
+```
+
 ## EDA
+
+In this section, we'll look at the trend of each variable used for analysis. First, we'll check the resale_price variable.
 
 ```{r}
 ggplot(data=HDBresale_sf, 
@@ -296,6 +354,8 @@ ggplot(data=HDBresale_sf,
                  color="black", 
                  fill="light blue")
 ```
+
+As can be seen, a lot of HDB property are sold in lower price (between \$400,000 and \$800,000), it is rare that property owner sells their HDB property for more than \$800,000.
 
 ```{r}
 PROX_ELDERLYCARE <- ggplot(data=HDBresale_sf, 
@@ -350,43 +410,64 @@ PROX_BUS <- ggplot(data=HDBresale_sf,
 ggarrange(PROX_ELDERLYCARE, PROX_CBD, PROX_HAWKER_MARKET, PROX_KINDERGARTEN, PROX_PRESCHOOL, PROX_SUPERMARKET, PROX_REMAINING_LEASE, PROX_BUS, ncol = 5, nrow = 2)
 ```
 
-Categorical Variable
+Observations from the independent variables:
+
+-   Most of the resold HDB properties are newly acquired, as most of them still have more than 90 years remaining lease year. However, some HDB property in the market are relatively older as they have 60 to 70 remaining lease years.
+
+-   A lot of HDB property are located in the CBD area, however most HDB are located around 3000 to 8000 meter from the CBD area.
+
+-   Most HDB are located near ameneties e.g. eldercare service, supermarket and hawker centre. Most HDB property are not built near kindergarten, but there are a few of preschools around the HDB property.
+
+### Statistical Point Map
+
+We want to check the geospatial distribution of HDB resale price in SG. We'll visualize using tmap.
 
 ```{r}
-unique(HDBresale_sf$flat_model)
+tm_shape(map)+
+  tm_polygons() +
+tm_shape(HDBresale_sf) +  
+  tm_dots(fill = "resale_price",
+          fill_alpha = 0.6,
+          size = 0.5,
+          fill.scale = tm_scale_intervals(
+            style="quantile")) 
 ```
 
-Storey Range Variable
+### Multicollinearity Check
+
+Before creating model, we'll check for the multicollinearity of each independent variables. If variables have high correlation with each other, we need to drop one fo the variable as the model may be unreliable and vague. First, let's drop the geometry field as the corrplot will pick up the geometry field if it's not dropped.
 
 ```{r}
-colnames(HDBresale_sf)
-```
-
-```{r}
-nrow(HDBresale_sf)
-HDBresale_sf$storey_range <- factor(HDBresale_sf$storey_range,
-                         levels = c("01 TO 03", "04 TO 06", "07 TO 09", "10 TO 12",
-                                    "13 TO 15", "16 TO 18", "19 TO 21", "22 TO 24",
-                                    "25 TO 27", "28 TO 30", "31 TO 33", "34 TO 36",
-                                    "37 TO 39", "40 TO 42", "43 TO 45", "46 TO 48",
-                                    "49 TO 51"),
-                         ordered = TRUE)
-class(HDBresale_sf$storey_range)
-```
-
-```{r}
-# drop geometry column
 HDB_numeric <- st_drop_geometry(HDBresale_sf)
 colnames(HDB_numeric)
 ```
 
-```{r}
-HDB_numeric <- st_drop_geometry(HDB_numeric)
-sapply(HDB_numeric[c(6, 10:18)], class)
-```
+The independent variables planned to be used in the model are the following:
+
+-   storey_range
+
+-   floor_area_sqm
+
+-   remaining_lease
+
+-   cbd_distance
+
+-   nearest_hawker
+
+-   nearest_eldercare
+
+-   nearest_supermarket
+
+-   kindergarten_350m
+
+-   preschool_350m
+
+-   bus_350m
+
+-   nearest_mrt
 
 ```{r}
-corrplot(cor(HDB_numeric[,c(10:18)]),
+corrplot(cor(HDB_numeric[,c(10:19)]),
          diag = FALSE, 
          order = "AOE",
          tl.pos = "td", 
@@ -395,20 +476,40 @@ corrplot(cor(HDB_numeric[,c(10:18)]),
          type = "upper")
 ```
 
-Multiple Linear Regression Model
+As can be seen, all of the variables don't have high correlation with each other (\< 0.8 correlation). So we can use all of the variables as predictors.
+
+## Build Multiple Linear Regression Model
+
+We'll build the multiple regression model with lm() and use summary() to view the summary of the model.
 
 ```{r}
 resale_price.mlr <- lm(
   formula = resale_price ~ floor_area_sqm + remaining_lease + cbd_distance  + 
     nearest_hawker + nearest_eldercare +
     kindergarten_350m   +
-    bus_350m, 
+    bus_350m + nearest_mrt, 
   data=HDBresale_sf)
 summary(resale_price.mlr)
 
 ```
 
+From the summary statistics, the model can explain 66% of the HDB resale price and the model is significantly significant as p-value is less than 0.05. The variable used in the model are all significant as the p-value of each predictor are less than 0.05. Apart from that, we can see the model deviate from actual resale price, but that there's no bias in prediction (underprediction and overprediction)
+
 ## Satisfying Requirements for Multiple Linear Regression
+
+Next, we'll check if the model satisfies the regression assumption, which are:
+
+-   Multicollinearity test: independent variables are not independent of each other, which makes it difficult to understand which variable influence the model.
+
+-   Non-linearity: independent and dependent variable need to have linear relation with each other
+
+-   Normality assumption: check if the model's residuals (difference between observed and predicted value) are normally distributed
+
+-   Spatial Autocorrelation: since we're building on a geographical referenced data, we need to check for spatial autocorrelation since regression models assume that observations (reisduals) are independent of each other.
+
+### Multicollinearity Test
+
+We'll test for multicollinearity with check_collinearity and we'll plot the vif for easier understanding.
 
 ```{r}
 check_collinearity(resale_price.mlr)
@@ -419,57 +520,229 @@ vif_model <- check_collinearity(resale_price.mlr)
 plot(vif_model)
 ```
 
+From the VIF plot, we can see that all of the predictors have no or very mild correlation with other predictors, so they don't affect the outcome (prediction) of the model. so we don't need to drop any of variable.
+
+### Test for Non-linearity
+
+We'll also test if the independent variables have linear relationship with dependent variable. We'll be checking for non-linearity using the same function as multicollinearity test, but this time we add `check = "linearity"`
+
 ```{r}
 check_model(resale_price.mlr,
             check = "linearity")
 ```
 
-```{r}
-crPlot(resale_price.mlr, variable = "cbd_distance")
-crPlot(resale_price.mlr, variable = "floor_area_sqm")
-crPlot(resale_price.mlr, variable = "remaining_lease")
-crPlot(resale_price.mlr, variable = "nearest_hawker")
-crPlot(resale_price.mlr, variable = "kindergarten_350m")
-crPlot(resale_price.mlr, variable = "nearest_eldercare")
-crPlot(resale_price.mlr, variable = "bus_350m")
-```
+As can be seen, the residuals failed the linearity test as there's a clear curve in the green line, which mean that the relationship between the predictors and resale price is not linear. Apart from that, the residuals spread increase at high fitted values. This means that statistical inference become unreliable (i.e. t-test become unreliable so predictor may become significant when it is not or vise versa, p-value is affected so significant variable can become significant when it is not).
+
+We can check which variable is not linear by plotting crPlot().
 
 ```{r}
-sum(HDBresale_sf$floor_area_sqm < 0)      # usually none
-sum(HDBresale_sf$remaining_lease < 0)     # should be >=0
-sum(HDBresale_sf$cbd_distance <= 0)       # log(0) or negative → problem
-sum(HDBresale_sf$nearest_hawker <= 0)     # log(0) → problem
-sum(HDBresale_sf$kindergarten_350m < 0) 
+cbd_crplot <- crPlot(resale_price.mlr, variable = "cbd_distance")
+floor_area_crplot <- crPlot(resale_price.mlr, variable = "floor_area_sqm")
+year_crplot <- crPlot(resale_price.mlr, variable = "remaining_lease")
+hawker_crplot <- crPlot(resale_price.mlr, variable = "nearest_hawker")
+kindergarten_crplot <- crPlot(resale_price.mlr, variable = "kindergarten_350m")
+eldercare_crplot <- crPlot(resale_price.mlr, variable = "nearest_eldercare")
+bus_crplot <- crPlot(resale_price.mlr, variable = "bus_350m")
+mrt_crplot <- crPlot(resale_price.mlr, variable = "nearest_mrt")
+
+ggarrange(cbd_crplot, year_crplot, floor_area_crplot, hawker_crplot, kindergarten_crplot, eldercare_crplot, bus_crplot, mrt_crplot, ncol = 4, nrow = 2)
 ```
+
+cbd_distance, nearest_hawker and nearest_mrt predictor show a downward trend from the linear component (purple line) and LOESS (blue dotted line). Only nearest_mrt show a consistent overlap between the linear component and LOESS line, so this means that only nearest_mrt have linear relationship with the dependent variable while nearest_hawker and cbd_distance don't have linear relationship with the dependent variable. One way to approach non-lineariy is that we can use log transformation to reduce skewness.
+
+floor_area_sqm, remaining_lease and kindergarten_350m shows an upward trend, with remaining_lease and kindergarten_350m having linear relationship with the dependent variable (indicated by LOESS curve and linear component). Since the variable still show some skewness, we can use square root transformation on the variables to reduce the skewness.
+
+Another way to ensure linearity fo model can also be done by transforming the dependent variable. In this case, we'll use log transformation as the EDA on the resale_price showed us a right tail distribution.
+
+Next, we'll calibrate the model with their transformation.
 
 ```{r}
 resale_price.mlr <- lm(
-  formula = resale_price ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+  formula = log(resale_price) ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
     log(nearest_hawker) + nearest_eldercare +
     sqrt(kindergarten_350m)   +
-    bus_350m, 
+    bus_350m + log(nearest_mrt), 
   data=HDBresale_sf)
 summary(resale_price.mlr)
 ```
 
-```{r}
-resale_price.mlr2 <- lm(
-  formula = resale_price ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
-    log(nearest_hawker) + nearest_eldercare   +
-    bus_350m, 
-  data=HDBresale_sf)
-summary(resale_price.mlr2)
-```
+After the transformation, kindergarten_350m becomes insignificant predictor to predict resale_price,so we'll drop the variable. We can also observe that the prediction accuracy increased by 4% and the model is significant as the p-value is less than 0.05. We can also see Apart from that, we can see the model deviate from actual resale price, but that there's no bias in prediction (underprediction and overprediction).
 
 ```{r}
-check_model(resale_price.mlr2,
+revised_mlr <- lm(
+  formula = log(resale_price) ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+    log(nearest_hawker) + nearest_eldercare  +
+    bus_350m + log(nearest_mrt), 
+  data=HDBresale_sf)
+summary(resale_price.mlr)
+```
+
+Next, we'll check again if the model satisfy the linearity assumption.
+
+```{r}
+check_model(resale_price.mlr,
             check = "linearity")
 ```
 
-### Multricollinearity Check
+The plot indicate that there's still a bit of non-linearity even after the variable are transformed as the green line is still not a straight line and does not follow the dotted line. However, this time, there is no sign of heteroskedacity as the residuals values do not have any pattern unlike before.
 
-## Multiple Linear Regression Model
+### Test for Normality Assumption
 
-Evaluation
+In this section, we'll test for the normality assumption of the residuals for reliably compute confidence interval, p-value and statistical significance tests. We'll check by plotting its qqplot using check_normality(), but we'll add this argument `type = "qq"`.
 
-## 
+```{r}
+plot(check_normality(resale_price.mlr), 
+     type = "qq")
+```
+
+```{r}
+check_model(resale_price.mlr,
+            check= "normality")
+```
+
+From the qqplot and normality check, we can conclude that the model satisfies the normality assumption as the residuals follow the straight line in qqplot and from the second plot we can see the residual follow approximately normal distribution.
+
+### Spatial Autocorrelation
+
+Before we check for spatial autocorrelation, we'll derive a new column in HDBresale_sf to calculate the residuals. We'll be using the residuals() function.
+
+```{r}
+residual_hdb <- residuals(resale_price.mlr)
+HDBresale_sf <- cbind(HDBresale_sf, residual_hdb) %>%
+  rename(model_residual = `residual_hdb`)
+```
+
+```{r}
+library(RColorBrewer)
+tm_shape(map) +
+  tm_polygons(fill_alpha = 0.4) +
+tm_shape(HDBresale_sf) +  
+  tm_dots(
+    fill = "model_residual",
+    size = 0.7,
+    col = "black",
+    fill.scale = tm_scale(
+      n = 10,
+      values = rev(brewer.pal(11, "RdBu")),
+      style = "quantile",
+      midpoint = NA),
+    fill.legend = tm_legend(title = "Residuals")
+  ) + 
+  tm_title("LM Residuals (Quantile Classification)") +
+  tm_layout(legend.outside = TRUE) +
+  tm_view(set_zoom_limits = c(11,14))
+```
+
+It seems that there are spatial autocorrelation from the plot above (indicated by blue and red points on the map). We'll confirm by computing Moran's I.
+
+```{r}
+HDBresale_sf <- HDBresale_sf %>% 
+  mutate(
+    nb = st_dist_band(
+      st_geometry(geometry), 
+                 upper = 1500),
+    wt = st_weights(
+      nb, style = "W"),
+    .before = 1) 
+```
+
+```{r}
+set.seed(1234)
+global_moran_perm(
+  HDBresale_sf$model_residual, 
+  nb = HDBresale_sf$nb, 
+  wt = HDBresale_sf$wt,
+  alternative = "two.sided", 
+  nsim = 499)
+```
+
+As can be seen, the statistic is 0.46, which indicate a high spatial correlation and the the the findings are significant as p-value is less than 0.05.
+
+## Build HDB Resale Price Model with GWmodel
+
+```{r}
+bw.adaptive <- bw.gwr(
+  formula = log(resale_price) ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+    log(nearest_hawker) + nearest_eldercare  +
+    bus_350m + log(nearest_mrt), 
+  data=HDBresale_sf, 
+  approach="CV", 
+  kernel="gaussian", 
+  adaptive=TRUE, 
+  longlat=FALSE)
+```
+
+```{r}
+gwr.adaptive <- gwr.basic(
+  formula = log(resale_price) ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+    log(nearest_hawker) + nearest_eldercare   +
+    bus_350m + log(nearest_mrt), 
+  data=HDBresale_sf, 
+  bw=bw.adaptive, 
+  kernel = 'gaussian', 
+  adaptive=TRUE, 
+  longlat = FALSE)
+gwr.adaptive
+```
+
+As can be seen, the R2 score is at 93%, which means that the model can explain 93% of the HDB resale price, the model is also significant. However, the model may not be as significant as the spatial autocrrelation is moderate, it can be seen from the coefficient summary of the cbd_distance is very big. So the model might not be as relavant. The variable that contribute the most to the model are floor_area_sqm and remaining_lease as they have highest estimate value and p-value lower than 0.05.
+
+```{r}
+HDBresale.adaptive <-
+  st_as_sf(gwr.adaptive$SDF) %>%
+  st_transform(crs=3414)
+```
+
+```{r}
+tm_shape(map)+
+  tm_polygons(fill_alpha = 0.1) +
+tm_shape(HDBresale.adaptive) +  
+  tm_dots(col = "Local_R2",
+          border.col = "gray60",
+          border.lwd = 1) 
+```
+
+```{}
+```
+
+The model explains well the HDB preoperty's resale price overall, but they don't explain some resale price of HDB property in the north and west.
+
+Since the model isn't relevant, we can use other models such as SEM (Spatial Error Model), SDM (Spatial Durbin Model) and SAR (Spatial Autoregressive Model). However, since SEM is best model for explanatory model and it remove spatial autocorrelation in residuals (making coffeicient and p-value reliable), we'll caliberate this model.
+
+First, we'll start by create coordinates and create neighbour's list, then we'll convert the list to spatial weights and calibrate the model
+
+```{r}
+coords <- st_coordinates(st_centroid(HDBresale_sf))
+```
+
+```{r}
+nb <- dnearneigh(coords, d1 = 0, d2 = 1500)
+```
+
+```{r}
+wt <- nb2listw(nb, style = "W")
+```
+
+```{r}
+revised_model <- errorsarlm(
+  formula = log(resale_price) ~  sqrt(floor_area_sqm) + sqrt(remaining_lease) + log(cbd_distance + 1)  + 
+    log(nearest_hawker) + nearest_eldercare   +
+    bus_350m + log(nearest_mrt),
+  data = HDBresale_sf,
+  listw = wt,
+  method = "eigen"
+)
+summary(revised_model)
+```
+
+From the model, the log-likelihood seem to have better fit as the value is high (9769.245), as the AIc is also lower (-13,009), iy is better compared to the multiple linear regression model. The variable that contribute to predicting resale_price are floor_area_sqm and remaining_lease as the cofficient is high.
+
+Next, we'll test again for spatial autocorrelation.
+
+```{r}
+residual_revised <- residuals(revised_model)
+
+moran.test(residual_revised, wt)
+```
+
+As can be seen, the Morans I value is close to 0, so there is no longer spatial autocorrelation in the model unlike the multiple linear regression model.
